@@ -193,8 +193,8 @@ function MenuCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="bg-gray-200 rounded-2xl p-2 flex flex-col gap-2">
+    <div className="bg-black-500 flex flex-col gap-2">
+      <div className="rounded-2xl p-2 flex flex-col gap-2">
         {/* Image */}
         <div className="bg-red-400 rounded-xl overflow-hidden" style={{ height: 120 }}>
           {item.image_url ? (
@@ -312,7 +312,7 @@ function BottomNav() {
 // Main Page 
 
 function CMSMenuContent() {
-  const { token } = useAdminAuth();
+  const { token, getAdminPayload } = useAdminAuth();
 
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -325,6 +325,8 @@ function CMSMenuContent() {
   const fetchMenus = async () => {
     setFetching(true);
     try {
+      // const payload = getAdminPayload();
+      // console.log('our admin payload', payload);
       const res = await fetch(`${API_BASE}/api/menu`);
       const data = await res.json();
       setMenus(data.data?.rows || data.data || []);

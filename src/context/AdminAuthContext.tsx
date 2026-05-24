@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface AdminUser {
   admin_id: string;
@@ -17,6 +17,8 @@ const AdminAuthContext = createContext<{
   token: string | null;
   logout: () => void;
   setAdminToken: (token: string) => void;
+  getAdminPayload: () => void;
+  // setAdminPayload: () => void;
 }>({
   isLoggedIn: false,
   isLoading: true,
@@ -24,9 +26,11 @@ const AdminAuthContext = createContext<{
   token: null,
   logout: () => {},
   setAdminToken: () => {},
+  getAdminPayload: () => {},
+  // setAdminPayload: () => {},
 });
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
+function decodeJwtPayload(token: string): AdminUser | null {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -36,7 +40,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
     );
-    return JSON.parse(jsonPayload);
+    return JSON.parse(jsonPayload) as AdminUser;
   } catch {
     return null;
   }
@@ -57,20 +61,34 @@ const initializeAuth = () => {
       localStorage.removeItem("admin_token");
     }
   }
+
   return {
     token: null,
     admin: null,
-    isLoggedIn: false,
-    isLoading: false,
+    isLoggedIn: false, // gak dipakai
+    isLoading: false, // gak dipakai
   };
 };
 
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authState] = useState(() => initializeAuth());
-  const [isLoggedIn, setIsLoggedIn] = useState(authState.isLoggedIn);
-  const [isLoading] = useState(authState.isLoading);
+  const [authState] = useState(Object);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [admin, setAdmin] = useState<AdminUser | null>(authState.admin);
   const [token, setToken] = useState<string | null>(authState.token);
+
+  useEffect(() => {
+    const authData = initializeAuth();
+
+    if (authData.token) {
+      setToken(authData.token)
+      setAdmin(authData.admin)
+      setIsLoggedIn(true);
+    }
+    else logout();
+
+    setIsLoading(false);
+  }, [])
 
   const setAdminToken = (t: string) => {
     localStorage.setItem("admin_token", t);
@@ -82,6 +100,17 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
     }
   };
 
+  const getAdminPayload = () => {
+    if (token && admin !== null) return admin;
+    else setIsLoggedIn(false);
+  }
+
+  // const setAdminPayload = () => {
+  //   let decoded = null;
+  //   if (token) decoded = decodeJwtPayload(token) as AdminUser;
+  //   setAdmin(decoded);
+  // }
+
   const logout = () => {
     localStorage.removeItem("admin_token");
     setIsLoggedIn(false);
@@ -90,7 +119,7 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
   };
 
   return (
-    <AdminAuthContext.Provider value={{ isLoggedIn, isLoading, admin, token, logout, setAdminToken }}>
+    <AdminAuthContext.Provider value={{ isLoggedIn, isLoading, admin, token, logout, setAdminToken, getAdminPayload }}>
       {children}
     </AdminAuthContext.Provider>
   );
