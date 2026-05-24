@@ -11,12 +11,13 @@ export default function AdminLoginPage() {
   const { setAdminToken } = useAdminAuth();
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const response = await fetch("http://localhost:5000/api/auth/admin/login", {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
