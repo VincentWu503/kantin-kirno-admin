@@ -236,18 +236,6 @@ function StatusContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      {/* Header */}
-      <div className="bg-white sticky top-0 z-30 flex items-center px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-400 rounded-full border-2 border-gray-300 flex items-center justify-center">
-            <span className="text-[7px] font-bold text-black text-center leading-tight">
-              SAHERA PAK KIRNO
-            </span>
-          </div>
-          <span className="text-black text-xl font-bold">Admin</span>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="p-4 mt-6">
         {fetching || isOpen === null ? (

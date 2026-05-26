@@ -85,16 +85,6 @@ function AccountContent() {
 
   return (
     <div className="min-h-screen bg-white pb-24">
-      {/* Back arrow */}
-      <div className="px-4 pt-4">
-        <button
-          onClick={() => router.back()}
-          className="text-black text-2xl font-light hover:opacity-70 transition"
-        >
-          ←
-        </button>
-      </div>
-
       {/* Body */}
       <div className="flex flex-col items-center px-6 mt-4 gap-6">
         {/* Logo */}

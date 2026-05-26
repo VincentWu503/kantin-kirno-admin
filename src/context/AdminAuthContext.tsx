@@ -71,55 +71,64 @@ const initializeAuth = () => {
 };
 
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authState] = useState(Object);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [admin, setAdmin] = useState<AdminUser | null>(authState.admin);
-  const [token, setToken] = useState<string | null>(authState.token);
-
-  useEffect(() => {
+  const [authState, setAuthState] = useState(() => {
     const authData = initializeAuth();
-
-    if (authData.token) {
-      setToken(authData.token)
-      setAdmin(authData.admin)
-      setIsLoggedIn(true);
+    
+    if (authData.token && authData.admin) {
+      return {
+        token: authData.token,
+        admin: authData.admin,
+        isLoggedIn: true,
+        isLoading: false,
+      };
+    } else {
+      return {
+        isLoggedIn: false,
+        isLoading: false,
+        admin: null as AdminUser | null,
+        token: null as string | null,
+      };
     }
-    else logout();
+  });
 
-    setIsLoading(false);
-  }, [])
+  const logout = () => {
+    localStorage.removeItem("admin_token");
+    setAuthState({
+      isLoggedIn: false,
+      isLoading: false,
+      admin: null,
+      token: null,
+    });
+  };
 
   const setAdminToken = (t: string) => {
     localStorage.setItem("admin_token", t);
     const payload = decodeJwtPayload(t);
     if (payload && payload.admin_id) {
-      setToken(t);
-      setAdmin(payload as unknown as AdminUser);
-      setIsLoggedIn(true);
+      setAuthState({
+        token: t,
+        admin: payload as unknown as AdminUser,
+        isLoggedIn: true,
+        isLoading: false,
+      });
     }
   };
 
   const getAdminPayload = () => {
-    if (token && admin !== null) return admin;
-    else setIsLoggedIn(false);
+    if (authState.token && authState.admin !== null) return authState.admin;
+    return null;
   }
 
-  // const setAdminPayload = () => {
-  //   let decoded = null;
-  //   if (token) decoded = decodeJwtPayload(token) as AdminUser;
-  //   setAdmin(decoded);
-  // }
-
-  const logout = () => {
-    localStorage.removeItem("admin_token");
-    setIsLoggedIn(false);
-    setAdmin(null);
-    setToken(null);
-  };
-
   return (
-    <AdminAuthContext.Provider value={{ isLoggedIn, isLoading, admin, token, logout, setAdminToken, getAdminPayload }}>
+    <AdminAuthContext.Provider value={{ 
+      isLoggedIn: authState.isLoggedIn, 
+      isLoading: authState.isLoading, 
+      admin: authState.admin, 
+      token: authState.token, 
+      logout, 
+      setAdminToken, 
+      getAdminPayload 
+    }}>
       {children}
     </AdminAuthContext.Provider>
   );

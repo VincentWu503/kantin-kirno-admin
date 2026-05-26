@@ -365,23 +365,16 @@ function CMSMenuContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      {/* Header */}
-      <div className="bg-white sticky top-0 z-30 flex items-center justify-between px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-400 rounded-full border-2 border-gray-300 flex items-center justify-center">
-            <span className="text-[7px] font-bold text-black text-center leading-tight">SAHERA PAK KIRNO</span>
-          </div>
-          <span className="text-black text-xl font-bold">Admin</span>
-        </div>
+      {/* Grid */}
+      <div className="p-4 flex items-end justify-end">
         <button
           onClick={() => setAddModal(true)}
-          className="w-11 h-11 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95"
+          className="fixed bottom-32 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95 shadow-lg z-30"
+          title="Tambah Menu"
         >
-          <span className="text-white text-2xl font-light leading-none">+</span>
+          <span className="text-white text-3xl font-light leading-none">+</span>
         </button>
       </div>
-
-      {/* Grid */}
       <div className="p-4">
         {fetching ? (
           <div className="flex justify-center items-center h-48">

@@ -299,22 +299,6 @@ function AdminList({
 }) {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white flex items-center justify-between px-4 py-4 shadow-sm">
-        <button
-          onClick={onBack}
-          className="text-black text-2xl font-light hover:opacity-70"
-        >
-          ←
-        </button>
-        <button
-          onClick={onAdd}
-          className="w-10 h-10 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95"
-        >
-          <span className="text-white text-2xl font-light leading-none">+</span>
-        </button>
-      </div>
-
       {/* Tabel admin */}
       <div className="mt-2">
         {admins.length === 0 ? (
