@@ -1,14 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-
-interface AdminUser {
-  admin_id: string;
-  username: string;
-  email: string;
-  super_admin: boolean;
-  verified: boolean;
-}
+import { AdminUser } from "@/utils/interfaces";
 
 const AdminAuthContext = createContext<{
   isLoggedIn: boolean;
@@ -47,18 +40,20 @@ function decodeJwtPayload(token: string): AdminUser | null {
 }
 
 const initializeAuth = () => {
-  const stored = localStorage.getItem("admin_token");
-  if (stored) {
-    const payload = decodeJwtPayload(stored);
-    if (payload && payload.admin_id) {
-      return {
-        token: stored,
-        admin: payload as unknown as AdminUser,
-        isLoggedIn: true,
-        isLoading: false,
-      };
-    } else {
-      localStorage.removeItem("admin_token");
+  if (typeof window !== undefined) {
+    const stored = localStorage.getItem("admin_token");
+    if (stored) {
+      const payload = decodeJwtPayload(stored);
+      if (payload && payload.admin_id) {
+        return {
+          token: stored,
+          admin: payload as unknown as AdminUser,
+          isLoggedIn: true,
+          isLoading: false,
+        };
+      } else {
+        localStorage.removeItem("admin_token");
+      }
     }
   }
 
