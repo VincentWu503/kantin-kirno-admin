@@ -273,7 +273,7 @@ function StatusContent() {
 export default function AdminStatusPage() {
   return (
     <AdminGuard>
-      <StatusContent />
+      <StatusContent/>
     </AdminGuard>
   );
 }

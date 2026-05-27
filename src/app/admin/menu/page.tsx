@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { CldUploadWidget } from 'next-cloudinary';
 import AdminGuard from "@/components/AdminGuard";
+import { uploadOptions } from "@/config/cloudinary";
+import { Stack, Switch, Divider } from "@mui/material";
 
 const API_BASE = "http://localhost:5000";
 
@@ -12,6 +15,7 @@ interface MenuItem {
   name: string;
   price: number;
   image_url: string | null;
+  is_available: boolean;
 }
 
 // Modal Tambah / Edit Menu 
@@ -33,13 +37,7 @@ function MenuFormModal({
   const [price, setPrice] = useState(item?.price?.toString() || "");
   const [imagePreview, setImagePreview] = useState<string>(item?.image_url || "");
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImagePreview(URL.createObjectURL(file));
-  };
+  const [stockAvailable, setStockAvailable] = useState<boolean>(item?.is_available ?? true);
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert("Nama menu wajib diisi.");
@@ -50,6 +48,7 @@ function MenuFormModal({
       const body: Record<string, unknown> = {
         name: name.trim(),
         price: Number(price),
+        is_available: stockAvailable,
       };
       if (imagePreview) body.image_url = imagePreview;
 
@@ -88,19 +87,18 @@ function MenuFormModal({
           ←
         </button>
 
-        {/* Image Upload Area */}
+        {/* Image Area */}
         <div
           className="bg-red-500 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden"
           style={{ height: 160 }}
-          onClick={() => fileRef.current?.click()}
         >
           {imagePreview ? (
             <img src={imagePreview} alt="preview" className="w-full h-full object-cover rounded-2xl" />
           ) : (
-            <span className="text-white text-5xl font-thin">+</span>
+            <span className="text-white text-5xl font-thin text-base text-center">Gambar menu akan ditampilkan di sini.</span>
           )}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+        {/* <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} /> */}
 
         {/* Name Field */}
         <div>
@@ -128,6 +126,54 @@ function MenuFormModal({
             placeholder="Harga (Rp)"
             className="w-full bg-blue-500 text-white placeholder-blue-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
+        </div>
+
+        {/* Toggle stok tersedia  */}
+        {mode !== "add" && 
+          <div> 
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between'}}>
+              <label className="block text-sm font-medium text-black mb-1">
+                Edit Stok
+              </label>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <span className="block text-sm font-medium text-black mb-1">Habis</span>
+                    <Switch color="success" 
+                            defaultChecked={item?.is_available} 
+                            onChange={(e) => setStockAvailable(e.target.checked)}
+                    />   
+                <span className="block text-sm font-medium text-black mb-1">Tersedia</span>
+              </Stack>     
+            </Stack>    
+          </div>
+        }
+
+        {/* Cloudinary upload widget (signed) */}
+        <div>       
+          <CldUploadWidget
+            signatureEndpoint="/api/sign-cloudinary-params"
+            // profil bakal beda folder
+            options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER, item?.name)} as any}
+            onSuccess={(result, { widget }) => {
+              const info = result?.info as any
+
+              // setCloudinaryResponse(info);  // { public_id, secure_url, etc }
+              
+              if (info.secure_url) setImagePreview(info.secure_url);
+            }}
+          >
+            {({ open }) => {
+              function handleOnClick() {
+                open();
+              }
+              return (
+                <button onClick={handleOnClick} 
+                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-base font-semibold transition active:scale-95 disabled:opacity-50"
+                >
+                  { mode === "add" ? "Upload Gambar" : "Ganti Gambar"}
+                </button>
+              );
+            }}
+          </CldUploadWidget>
         </div>
 
         {/* Submit Button */}
@@ -206,7 +252,14 @@ function MenuCard({
 
         {/* Info */}
         <div className="px-1">
-          <p className="text-black text-sm font-medium truncate">{item.name}</p>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent:'space-between'}}>
+              <span className="text-black text-sm font-medium truncate">{item.name}</span>
+              {
+                item.is_available ? 
+                <span className="text-green-600 text-sm font">Tersedia</span> : 
+                <span className="text-red-700 text-sm font">Habis</span>
+              }
+          </Stack>   
           <div className="flex justify-between items-center">
             <p className="text-black text-xs">Harga</p>
             <p className="text-black text-xs font-semibold">

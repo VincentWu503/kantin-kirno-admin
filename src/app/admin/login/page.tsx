@@ -3,37 +3,32 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { handleLoginApi } from "@/lib/admins";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { setAdminToken } = useAdminAuth();
+  const { login } = useAdminAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/admin/login", {
-        method: "POST",
-        credentials: 'include',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // const response = await fetch("http://localhost:5000/api/auth/admin/login", {
+      //   method: "POST",
+      //   credentials: 'include',
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ email, password }),
+      // });
+      const response = await handleLoginApi({email, password}) as any;
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType?.includes("application/json")) {
-        throw new Error("Server tidak mengirimkan JSON. Periksa apakah backend menyala.");
-      }
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setAdminToken(data.token);
+      if (response.status === 200) {
+        login(response.data.token);
         router.push("/admin/menu");
       } else {
-        alert(data.message || "Login gagal");
+        alert(response.message || "Login gagal");
       }
     } catch (err) {
       alert("Terjadi kesalahan: " + (err instanceof Error ? err.message : "Unknown error"));
