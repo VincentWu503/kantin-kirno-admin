@@ -6,7 +6,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { CldUploadWidget } from 'next-cloudinary';
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
-import { Stack, Switch, Typography } from "@mui/material";
+import { Stack, Switch, Divider } from "@mui/material";
 
 const API_BASE = "http://localhost:5000";
 
@@ -15,6 +15,7 @@ interface MenuItem {
   name: string;
   price: number;
   image_url: string | null;
+  is_available: boolean;
 }
 
 // Modal Tambah / Edit Menu 
@@ -36,7 +37,7 @@ function MenuFormModal({
   const [price, setPrice] = useState(item?.price?.toString() || "");
   const [imagePreview, setImagePreview] = useState<string>(item?.image_url || "");
   const [loading, setLoading] = useState(false);
-  const [stockAvailable, setStockAvailable] = useState(true);
+  const [stockAvailable, setStockAvailable] = useState<boolean>(item?.is_available ?? true);
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert("Nama menu wajib diisi.");
@@ -137,7 +138,7 @@ function MenuFormModal({
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <span className="block text-sm font-medium text-black mb-1">Habis</span>
                     <Switch color="success" 
-                            defaultChecked 
+                            defaultChecked={item?.is_available} 
                             onChange={(e) => setStockAvailable(e.target.checked)}
                     />   
                 <span className="block text-sm font-medium text-black mb-1">Tersedia</span>
@@ -150,7 +151,8 @@ function MenuFormModal({
         <div>       
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
-            options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER)} as any}
+            // profil bakal beda folder
+            options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER, item?.name)} as any}
             onSuccess={(result, { widget }) => {
               const info = result?.info as any
 
@@ -250,7 +252,14 @@ function MenuCard({
 
         {/* Info */}
         <div className="px-1">
-          <p className="text-black text-sm font-medium truncate">{item.name}</p>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent:'space-between'}}>
+              <span className="text-black text-sm font-medium truncate">{item.name}</span>
+              {
+                item.is_available ? 
+                <span className="text-green-600 text-sm font">Tersedia</span> : 
+                <span className="text-red-700 text-sm font">Habis</span>
+              }
+          </Stack>   
           <div className="flex justify-between items-center">
             <p className="text-black text-xs">Harga</p>
             <p className="text-black text-xs font-semibold">

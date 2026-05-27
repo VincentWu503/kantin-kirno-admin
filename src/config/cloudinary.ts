@@ -1,9 +1,10 @@
-export function uploadOptions(folder: string = "samples") {
+export function uploadOptions(folder: string = "samples", publicId: string | null = null) {
     return {
         sources: ['local', 'url', 'camera'], 
         multiple: false,   
-        folder: folder,                                
-        maxFiles: 1,                                        
+        folder: folder,  
+        ...(publicId && {publicId: publicId}),                              
+        maxFiles: 1,                                     
         resourceType: 'image',                             
         clientAllowedFormats: ['png', 'jpeg', 'webp', 'jpg'],
         maxFileSize: 1024 * 5120,  // limit 5 MB       
