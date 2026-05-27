@@ -8,7 +8,7 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { setAdminToken } = useAdminAuth();
+  const { login } = useAdminAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.SubmitEvent) => {
@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setAdminToken(data.token);
+        login(data.token);
         router.push("/admin/menu");
       } else {
         alert(data.message || "Login gagal");

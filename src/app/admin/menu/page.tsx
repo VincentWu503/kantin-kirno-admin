@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { CldUploadWidget } from 'next-cloudinary';
 import AdminGuard from "@/components/AdminGuard";
+import { uploadOptions } from "@/config/cloudinary";
 
 const API_BASE = "http://localhost:5000";
 
@@ -34,6 +36,7 @@ function MenuFormModal({
   const [imagePreview, setImagePreview] = useState<string>(item?.image_url || "");
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [cloudinaryResponse, setCloudinaryResponse] = useState(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,19 +91,18 @@ function MenuFormModal({
           ←
         </button>
 
-        {/* Image Upload Area */}
+        {/* Image Area */}
         <div
           className="bg-red-500 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden"
           style={{ height: 160 }}
-          onClick={() => fileRef.current?.click()}
         >
           {imagePreview ? (
             <img src={imagePreview} alt="preview" className="w-full h-full object-cover rounded-2xl" />
           ) : (
-            <span className="text-white text-5xl font-thin">+</span>
+            <span className="text-white text-5xl font-thin text-base text-center">Gambar menu akan ditampilkan di sini.</span>
           )}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+        {/* <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} /> */}
 
         {/* Name Field */}
         <div>
@@ -128,6 +130,38 @@ function MenuFormModal({
             placeholder="Harga (Rp)"
             className="w-full bg-blue-500 text-white placeholder-blue-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
+        </div>
+
+        {/* Cloudinary upload widget (signed) */}
+        <div> 
+          <label className="block text-sm font-medium text-black mb-1">
+            {mode === "add" ? "Tambah Gambar" : "Edit Gambar"}
+          </label>         
+          <CldUploadWidget
+            signatureEndpoint="/api/sign-cloudinary-params"
+            options={{...uploadOptions} as any}
+            onSuccess={(result, { widget }) => {
+              const info = result?.info as any
+
+              setCloudinaryResponse(info);  // { public_id, secure_url, etc }
+              
+              if (info.secure_url) setImagePreview(info.secure_url);
+            }}
+          >
+            {({ open }) => {
+              function handleOnClick() {
+                setCloudinaryResponse(null);
+                open();
+              }
+              return (
+                <button onClick={handleOnClick} 
+                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-base font-semibold transition active:scale-95 disabled:opacity-50"
+                >
+                  { mode === "add" ? "Upload Gambar" : "Ganti Gambar"}
+                </button>
+              );
+            }}
+          </CldUploadWidget>
         </div>
 
         {/* Submit Button */}

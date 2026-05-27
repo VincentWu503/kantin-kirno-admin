@@ -11,7 +11,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     if (!isLoading && !isLoggedIn) {
       router.replace("/admin/login");
     }
-  }, [isLoggedIn, isLoading, router]);
+  }, []);
 
   if (isLoading) {
     return (

@@ -17,22 +17,6 @@ export async function refreshAccessToken(accessToken: string) {
     }
 }
 
-export async function fetchUser(accessToken: string) {
-    try {
-        const result = await fetchWrapper('/auth/admin/profile', {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${accessToken}`
-            },
-        });
-
-        return result;
-  } catch (err) {
-    throw err;
-  }
-}
-
 export async function authMe(accessToken: string) {
     try {
         const result = await fetchWrapper(`/auth/admin/me`, {

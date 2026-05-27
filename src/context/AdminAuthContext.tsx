@@ -2,14 +2,16 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { AdminUser } from "@/utils/interfaces";
+import { jwtDecode } from "jwt-decode";
 
 const AdminAuthContext = createContext<{
   isLoggedIn: boolean;
   isLoading: boolean;
   admin: AdminUser | null;
   token: string | null;
+  login: (token: string) => void;
   logout: () => void;
-  setAdminToken: (token: string) => void;
+  // setAdminToken: (token: string) => void;
   getAdminPayload: () => void;
   // setAdminPayload: () => void;
 }>({
@@ -17,8 +19,9 @@ const AdminAuthContext = createContext<{
   isLoading: true,
   admin: null,
   token: null,
+  login: () => {},
   logout: () => {},
-  setAdminToken: () => {},
+  // setAdminToken: () => {},
   getAdminPayload: () => {},
   // setAdminPayload: () => {},
 });
@@ -39,8 +42,100 @@ function decodeJwtPayload(token: string): AdminUser | null {
   }
 }
 
-const initializeAuth = () => {
-  if (typeof window !== undefined) {
+// INI KELOAD sebelum browser (SSR)
+// const initializeAuth = () => {
+//   if (typeof window === undefined) return;
+//   const stored = localStorage.getItem("admin_token");
+//   if (stored) {
+//     const payload = decodeJwtPayload(stored);
+//     if (payload && payload.admin_id) {
+//       return {
+//         token: stored,
+//         admin: payload as unknown as AdminUser,
+//         isLoggedIn: true,
+//         isLoading: false,
+//       };
+//     } else {
+//       localStorage.removeItem("admin_token");
+//     }
+    
+//   }
+
+//   return {
+//     token: null,
+//     admin: null,
+//     isLoggedIn: false, // gak dipakai
+//     isLoading: false, // gak dipakai
+//   };
+// };
+
+type AuthStateData = {
+  token: string | null,
+  admin: AdminUser | null,
+  isLoggedIn: boolean,
+  isLoading: false,
+}
+
+export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // nyawit kalian
+  // const [authState, setAuthState] = useState(() => {
+  //   const authData = initializeAuth();
+    
+  //   if (authData?.token && authData?.admin) {
+  //     return {
+  //       token: authData.token,
+  //       admin: authData.admin,
+  //       isLoggedIn: true,
+  //       isLoading: false,
+  //     };
+  //   } else {
+  //     return {
+  //       isLoggedIn: false,
+  //       isLoading: false,
+  //       admin: null as AdminUser | null,
+  //       token: null as string | null,
+  //     };
+  //   }
+  // });
+  const [authState, setAuthState] = useState<AuthStateData | null>(null);
+
+  useEffect(() => {
+    initializeAuth();
+  })
+
+  const logout = () => {
+    localStorage.removeItem("admin_token");
+    setAuthState({
+      isLoggedIn: false,
+      isLoading: false,
+      admin: null,
+      token: null,
+    });
+  };
+
+  // kenapa gak namain login?????????????????????????????????????????????????????????
+  // nasib beda repo, beda implementasi, lu pada nyusahin tim lain yang ngerjain
+  const login = (token: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("admin_token", token);
+    }
+
+    const newPayload = jwtDecode(token) as AdminUser;
+    setAuthState({
+      isLoggedIn: true,
+      isLoading: false,
+      admin: authState?.admin || newPayload,
+      token: authState?.token || token,
+    });
+  };
+
+  const getAdminPayload = () => {
+    if (authState?.token && authState.admin !== null) return authState.admin;
+    return null;
+  }
+
+  const initializeAuth = async () => {
+    if (typeof window === undefined) return;
     const stored = localStorage.getItem("admin_token");
     if (stored) {
       const payload = decodeJwtPayload(stored);
@@ -54,74 +149,25 @@ const initializeAuth = () => {
       } else {
         localStorage.removeItem("admin_token");
       }
+      
     }
-  }
 
-  return {
-    token: null,
-    admin: null,
-    isLoggedIn: false, // gak dipakai
-    isLoading: false, // gak dipakai
-  };
-};
-
-export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authState, setAuthState] = useState(() => {
-    const authData = initializeAuth();
-    
-    if (authData.token && authData.admin) {
-      return {
-        token: authData.token,
-        admin: authData.admin,
-        isLoggedIn: true,
-        isLoading: false,
-      };
-    } else {
-      return {
-        isLoggedIn: false,
-        isLoading: false,
-        admin: null as AdminUser | null,
-        token: null as string | null,
-      };
-    }
-  });
-
-  const logout = () => {
-    localStorage.removeItem("admin_token");
-    setAuthState({
-      isLoggedIn: false,
-      isLoading: false,
-      admin: null,
+    return {
       token: null,
-    });
+      admin: null,
+      isLoggedIn: false, // gak dipakai
+      isLoading: false, // gak dipakai
+    };
   };
-
-  const setAdminToken = (t: string) => {
-    localStorage.setItem("admin_token", t);
-    const payload = decodeJwtPayload(t);
-    if (payload && payload.admin_id) {
-      setAuthState({
-        token: t,
-        admin: payload as unknown as AdminUser,
-        isLoggedIn: true,
-        isLoading: false,
-      });
-    }
-  };
-
-  const getAdminPayload = () => {
-    if (authState.token && authState.admin !== null) return authState.admin;
-    return null;
-  }
 
   return (
     <AdminAuthContext.Provider value={{ 
-      isLoggedIn: authState.isLoggedIn, 
-      isLoading: authState.isLoading, 
-      admin: authState.admin, 
-      token: authState.token, 
+      isLoggedIn: authState?.isLoggedIn || false, 
+      isLoading: authState?.isLoading || false, 
+      admin: authState?.admin || null, 
+      token: authState?.token || "", 
       logout, 
-      setAdminToken, 
+      login, 
       getAdminPayload 
     }}>
       {children}
