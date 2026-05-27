@@ -6,6 +6,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { CldUploadWidget } from 'next-cloudinary';
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
+import { Stack, Switch, Typography } from "@mui/material";
 
 const API_BASE = "http://localhost:5000";
 
@@ -35,14 +36,7 @@ function MenuFormModal({
   const [price, setPrice] = useState(item?.price?.toString() || "");
   const [imagePreview, setImagePreview] = useState<string>(item?.image_url || "");
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [cloudinaryResponse, setCloudinaryResponse] = useState(null);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImagePreview(URL.createObjectURL(file));
-  };
+  const [stockAvailable, setStockAvailable] = useState(true);
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert("Nama menu wajib diisi.");
@@ -53,6 +47,7 @@ function MenuFormModal({
       const body: Record<string, unknown> = {
         name: name.trim(),
         price: Number(price),
+        is_available: stockAvailable,
       };
       if (imagePreview) body.image_url = imagePreview;
 
@@ -132,25 +127,40 @@ function MenuFormModal({
           />
         </div>
 
+        {/* Toggle stok tersedia  */}
+        {mode !== "add" && 
+          <div> 
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between'}}>
+              <label className="block text-sm font-medium text-black mb-1">
+                Edit Stok
+              </label>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <span className="block text-sm font-medium text-black mb-1">Habis</span>
+                    <Switch color="success" 
+                            defaultChecked 
+                            onChange={(e) => setStockAvailable(e.target.checked)}
+                    />   
+                <span className="block text-sm font-medium text-black mb-1">Tersedia</span>
+              </Stack>     
+            </Stack>    
+          </div>
+        }
+
         {/* Cloudinary upload widget (signed) */}
-        <div> 
-          <label className="block text-sm font-medium text-black mb-1">
-            {mode === "add" ? "Tambah Gambar" : "Edit Gambar"}
-          </label>         
+        <div>       
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
             options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER)} as any}
             onSuccess={(result, { widget }) => {
               const info = result?.info as any
 
-              setCloudinaryResponse(info);  // { public_id, secure_url, etc }
+              // setCloudinaryResponse(info);  // { public_id, secure_url, etc }
               
               if (info.secure_url) setImagePreview(info.secure_url);
             }}
           >
             {({ open }) => {
               function handleOnClick() {
-                setCloudinaryResponse(null);
                 open();
               }
               return (
