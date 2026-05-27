@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   {
     key: "order",
     label: "Order",
-    href: "/admin/orders",
+    href: "/order",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   {
     key: "close",
     label: "Close",
-    href: null,
+    href: "/admin/status",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
@@ -57,10 +57,7 @@ export default function AdminNavbar() {
   const { logout } = useAdminAuth();
 
   const handleClick = (item: (typeof NAV_ITEMS)[number]) => {
-    if (item.key === "close") {
-      logout();
-      router.push("/admin/login");
-    } else if (item.href) {
+    if (item.href) {
       router.push(item.href);
     }
   };

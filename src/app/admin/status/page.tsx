@@ -22,7 +22,7 @@ function BottomNav() {
           <path d="M9 12h6M9 16h4" />
         </svg>
       ),
-      onClick: () => router.push("/admin/orders"),
+      onClick: () => router.push("/order"),
     },
     {
       label: "Edit",
@@ -44,8 +44,7 @@ function BottomNav() {
           <path d="M12 6v6" />
         </svg>
       ),
-      onClick: () => {},
-      active: true,
+      onClick: () => router.push("/admin/status"),
     },
     {
       label: "Account",

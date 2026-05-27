@@ -19,7 +19,7 @@ function BottomNav() {
           <path d="M9 12h6M9 16h4" />
         </svg>
       ),
-      onClick: () => router.push("/admin/orders"),
+      onClick: () => router.push("/order"),
     },
     {
       label: "Edit",
@@ -49,8 +49,7 @@ function BottomNav() {
           <circle cx="12" cy="7" r="4" />
         </svg>
       ),
-      onClick: () => {},
-      active: true,
+      onClick: () => router.push("/admin/account"),
     },
   ];
 

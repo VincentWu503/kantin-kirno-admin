@@ -99,6 +99,7 @@ function AddAdminForm({
     if (!email.trim()) return setError("E-mail wajib diisi.");
     if (!password) return setError("Password wajib diisi.");
     if (password !== confirmPassword) return setError("Password dan konfirmasi tidak sesuai.");
+    if (password.length < 6) return setError("Password minimal 6 karakter.");
 
     setLoading(true);
     try {
@@ -299,6 +300,18 @@ function AdminList({
 }) {
   return (
     <div className="min-h-screen bg-gray-100">
+      <BlueHeader title="Kelola Admin" onBack={onBack} />
+
+      {/* Add Button */}
+      <div className="p-4">
+        <button
+          onClick={onAdd}
+          className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-semibold transition active:scale-95"
+        >
+          + Tambah Admin Baru
+        </button>
+      </div>
+
       {/* Tabel admin */}
       <div className="mt-2">
         {admins.length === 0 ? (
@@ -383,7 +396,7 @@ function KelolaContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setAdmins(data.admins || []);
+      setAdmins(data.data || data.admins || []);
     } catch {
       alert("Gagal memload daftar admin.");
     } finally {
