@@ -32,6 +32,10 @@ export async function fetchWrapper(endpoint: string, options: RequestInit = {}):
 
         let response = await fetch(apiRoute(endpoint), fetchOptions);
 
+        let protectedRoutes = [
+            '/refresh'
+        ]
+
         // kasus unauthorized di endpoint selain refresh (token expired di passport middleware)
         if (response.status === 401 && !endpoint.includes('/refresh')) {
             try {

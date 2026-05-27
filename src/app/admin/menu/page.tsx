@@ -139,7 +139,7 @@ function MenuFormModal({
           </label>         
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
-            options={{...uploadOptions} as any}
+            options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER)} as any}
             onSuccess={(result, { widget }) => {
               const info = result?.info as any
 

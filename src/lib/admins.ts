@@ -49,3 +49,19 @@ export async function handleLogoutApi(accessToken: string) {
         throw err;
     }
 }
+
+export async function handleLoginApi(body: object = {}) {
+    try {
+        const result = await fetchWrapper(`/auth/admin/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({...body})
+        });
+
+        return result;
+    } catch (err) {
+        throw err;
+    }
+}

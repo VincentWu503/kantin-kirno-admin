@@ -73,7 +73,7 @@ type AuthStateData = {
   token: string | null,
   admin: AdminUser | null,
   isLoggedIn: boolean,
-  isLoading: false,
+  isLoading: boolean,
 }
 
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -97,17 +97,23 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
   //     };
   //   }
   // });
-  const [authState, setAuthState] = useState<AuthStateData | null>(null);
+  const [authState, setAuthState] = useState<AuthStateData>({
+    token: null,
+    admin: null,
+    isLoggedIn: false,
+    isLoading: true,
+  });
 
   useEffect(() => {
-    initializeAuth();
-  })
+    const initialState = initializeAuth() as any;
+    if (initialState) setAuthState(initialState);
+  }, [])
 
   const logout = () => {
     localStorage.removeItem("admin_token");
     setAuthState({
       isLoggedIn: false,
-      isLoading: false,
+      isLoading: true,
       admin: null,
       token: null,
     });
