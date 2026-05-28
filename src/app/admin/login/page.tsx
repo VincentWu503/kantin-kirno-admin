@@ -4,34 +4,37 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { handleLoginApi } from "@/lib/admins";
+import { Divider } from "@mui/material";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { login } = useAdminAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage(null);
     try {
-      // const response = await fetch("http://localhost:5000/api/auth/admin/login", {
-      //   method: "POST",
-      //   credentials: 'include',
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ email, password }),
-      // });
       const response = await handleLoginApi({email, password}) as any;
 
       if (response.status === 200) {
         login(response.data.token);
         router.push("/admin/menu");
       } else {
-        alert(response.message || "Login gagal");
+        setErrorMessage(response.message || "Login gagal");
       }
-    } catch (err) {
-      alert("Terjadi kesalahan: " + (err instanceof Error ? err.message : "Unknown error"));
+    } catch (err: any) {
+      console.error(err);
+      try {
+        const errData = JSON.parse(err.message);
+        setErrorMessage(errData.message || "Login gagal");
+      } catch {
+        setErrorMessage("Terjadi kesalahan: " + (err instanceof Error ? err.message : "Unknown error"));
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +78,10 @@ export default function AdminLoginPage() {
               required
             />
           </div>
+
+          {errorMessage && <span className="text-sm font-medium mb-1 text-red-600">{errorMessage}</span>}
+
+          <Divider sx={{ my: 1 }} ></Divider>
 
           <button
             type="submit"

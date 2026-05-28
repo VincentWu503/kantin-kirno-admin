@@ -3,6 +3,14 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AdminUser } from "@/utils/interfaces";
 import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
+
+type AuthStateData = {
+  token: string | null;
+  admin: AdminUser | null;
+  isLoggedIn: boolean;
+  isLoading: boolean;
+};
 
 const AdminAuthContext = createContext<{
   isLoggedIn: boolean;
@@ -12,6 +20,7 @@ const AdminAuthContext = createContext<{
   login: (token: string) => void;
   logout: () => void;
   getAdminPayload: () => AdminUser | null;
+  getAuthState: () => AuthStateData | null;
 }>({
   isLoggedIn: false,
   isLoading: true,
@@ -20,6 +29,7 @@ const AdminAuthContext = createContext<{
   login: () => {},
   logout: () => {},
   getAdminPayload: () => null,
+  getAuthState: () => null,
 });
 
 function decodeJwtPayload(token: string): AdminUser | null {
@@ -31,14 +41,8 @@ function decodeJwtPayload(token: string): AdminUser | null {
   }
 }
 
-type AuthStateData = {
-  token: string | null;
-  admin: AdminUser | null;
-  isLoggedIn: boolean;
-  isLoading: boolean;
-};
-
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const [authState, setAuthState] = useState<AuthStateData>({
     token: null,
     admin: null,
@@ -107,6 +111,8 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
     return authState.admin || null;
   };
 
+  const getAuthState = () => { return authState || null };
+ 
   return (
     <AdminAuthContext.Provider
       value={{
@@ -117,6 +123,7 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         logout,
         login,
         getAdminPayload,
+        getAuthState
       }}
     >
       {children}

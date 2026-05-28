@@ -36,6 +36,7 @@ export async function addToCart(menu: MenuData, quantity: number, accessToken: s
         })
         return true;
     } catch (err) {
+        // which response is allowed?????
         console.error("Allowed Error:", err); // Allowed baby
         try {
             await fetchWrapper("/order/cart/" + menu.menu_id, {
