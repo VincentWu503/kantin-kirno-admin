@@ -7,6 +7,7 @@ import { CldUploadWidget } from 'next-cloudinary';
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
 import { Stack, Switch, Divider } from "@mui/material";
+import { upsertMenu } from "@/lib/menu";
 
 const API_BASE = "http://localhost:5000";
 
@@ -52,27 +53,34 @@ function MenuFormModal({
       };
       if (imagePreview) body.image_url = imagePreview;
 
+      // const url =
+      //   mode === "add"
+      //     ? `${API_BASE}/api/menu`
+      //     : `${API_BASE}/api/menu/${item!.menu_id}`;
       const url =
         mode === "add"
-          ? `${API_BASE}/api/menu`
-          : `${API_BASE}/api/menu/${item!.menu_id}`;
+          ? `/menu`
+          : `/menu/${item!.menu_id}`;
 
-      const response = await fetch(url, {
-        method: mode === "add" ? "POST" : "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+      // const response = await fetch(url, {
+      //   method: mode === "add" ? "POST" : "PATCH",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify(body),
+      // });
+      const response = await upsertMenu(url, {
+        mode: mode,
+        token: token,
+        body: body, // JSON stringify di lib
+      })
 
-      if (response.ok || response.status === 201 || response.status === 204) {
+      if (response.status === 201 || response.status === 204) {
         onSuccess();
-      } else {
-        const data = await response.json().catch(() => ({}));
-        alert(data.message || "Gagal menyimpan menu.");
-      }
-    } catch {
+      } 
+    } catch (err: any) {
+      console.error(err);
       alert("Terjadi kesalahan koneksi.");
     } finally {
       setLoading(false);
@@ -378,8 +386,6 @@ function CMSMenuContent() {
   const fetchMenus = async () => {
     setFetching(true);
     try {
-      // const payload = getAdminPayload();
-      // console.log('our admin payload', payload);
       const res = await fetch(`${API_BASE}/api/menu`);
       const data = await res.json();
       setMenus(data.data?.rows || data.data || []);

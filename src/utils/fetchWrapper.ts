@@ -7,6 +7,8 @@
 // import { apiRoute } from "./fetchUtils";
 // import { ResponseObject } from "./interfaces";
 // // basic implementation
+"use client"
+
 import { apiRoute } from "./fetchUtils";
 import { ResponseObject } from "./interfaces";
 import { handleLogoutApi, refreshAccessToken } from "@/lib/admins";
@@ -14,8 +16,19 @@ import { ApiErrorData, TokenData } from "./types";
 
 let refreshPromise: Promise<string | null> | null = null;
 
+// maybe i should document this function behaviour
+/**
+ * Custom implementation of fetch API to throw response status 400 - 599 as an error;
+ * and for refresh token flow handling.
+ *
+ * @param {string} endpoint - The API endpoint to be called, starts after /api prefix.
+ * Passed endpoint string must not include full API URL, just provide relative path starting after /api
+ * @param {object} options - Fetch API options.
+ * @returns {Promise<ResponseObject>} Response object containing status field and API response data.
+ * @throws {Error} Throws an error if refresh token failed, or .
+ */
 export async function fetchWrapper(endpoint: string, options: RequestInit = {}): Promise<ResponseObject> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -31,24 +44,23 @@ export async function fetchWrapper(endpoint: string, options: RequestInit = {}):
         }
 
         let response = await fetch(apiRoute(endpoint), fetchOptions);
+        const clone = response.clone();
 
-        let protectedRoutes = [
-            '/refresh'
-        ]
+        const resData = await clone.json();
 
         // kasus unauthorized di endpoint selain refresh (token expired di passport middleware)
-        if (response.status === 401 && !endpoint.includes('/refresh')) {
+        if (response.status === 401 && resData.error === "UNAUTHORIZED_ERROR" && !endpoint.includes('/refresh')) {
             try {
                 if (!refreshPromise) {
                     console.log('Refresh token sedang dipanggil...')
                     refreshPromise = (async () => {
-                        const currentToken = localStorage.getItem('token') || "";
+                        const currentToken = localStorage.getItem('admin_token') || "";
                         const res = await refreshAccessToken(currentToken);
 
                         const data = res.data as TokenData;
                         const newToken = data.token
 
-                        localStorage.setItem('token', newToken);
+                        localStorage.setItem('admin_token', newToken);
                         return newToken;
                     })();
                 }
@@ -63,11 +75,13 @@ export async function fetchWrapper(endpoint: string, options: RequestInit = {}):
                         'Authorization': `Bearer ${newToken}`
                     };
 
+                    (fetchOptions as any)._retry = true;
+
                     response = await fetch(apiRoute(endpoint), fetchOptions);
                 }
             } catch (err: any) {
                 try {
-                    const oldToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                    const oldToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
                     const currToken = oldToken || token;
                     console.log('curr token for logout', currToken)
                     if (currToken) {
@@ -77,7 +91,7 @@ export async function fetchWrapper(endpoint: string, options: RequestInit = {}):
                     console.error(err.message);
                 }
 
-                localStorage.removeItem('token');
+                localStorage.removeItem('admin_token');
 
                 let errorData;
                 try {
@@ -96,25 +110,32 @@ export async function fetchWrapper(endpoint: string, options: RequestInit = {}):
                 }
 
 
-                if (errorData.statusCode === 401) {
+                console.log(errorData.error);
+                if (errorData.statusCode === 401 && errorData.error === "UNAUTHORIZED_ERROR") {
                     throw new Error(JSON.stringify({
+                        status: 401,
                         statusCode: 401,
                         message: "Sesi Anda telah berakhir! Harap login ulang."
                     }));
                 } else if (errorData.statusCode === 403) {
                     throw new Error(JSON.stringify({
+                        status: 403,
                         statusCode: 403,
                         // ambil pesan dari be
                         message: errorData.message
                     }));
                 }
+
+                // jika error data adalah JSON (status code lain)
+                throw new Error(JSON.stringify({
+                    ...errorData
+                }))
             } finally {
                 refreshPromise = null;
             }
         }
 
         // kondisi normal
-
         const isJson = response.headers.get('content-type')?.includes('application/json');
 
         if (response.status === 204) {
