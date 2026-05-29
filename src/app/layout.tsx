@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
 import { AdminAuthProvider } from "@/context/AdminAuthContext";
 import LayoutShell from "@/components/LayoutShell";
 import "./globals.css";
-
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
 
 export const metadata: Metadata = {
   title: "Admin – Sahera Pak Kirno",
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
-      <body className={montserrat.className}>
+      <body>
         <AdminAuthProvider>
           <LayoutShell>{children}</LayoutShell>
         </AdminAuthProvider>
