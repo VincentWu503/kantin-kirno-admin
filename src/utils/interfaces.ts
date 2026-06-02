@@ -1,6 +1,6 @@
 export interface ResponseObject {
-    status: number,
-    data: object,
+  status: number;
+  data: object;
 }
 
 export interface AdminUser {
