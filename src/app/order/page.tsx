@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
+import { getOrders } from "@/lib/order";
+import { ResponseObject } from "@/utils/interfaces";
 
 const API_BASE = "http://localhost:5000";
 
@@ -30,7 +32,7 @@ interface Order {
   items?: OrderItem[];
 }
 
-// Detail Modal 
+// Detail Modal
 
 function OrderDetailModal({
   order,
@@ -82,7 +84,10 @@ function OrderDetailModal({
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl mx-auto my-auto">
         {/* Title */}
         <div className="px-6 pt-6 pb-3 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-black" style={{ fontFamily: "Georgia, serif" }}>
+          <h2
+            className="text-2xl font-bold text-black"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
             Update Status Order #{order.order_id}
           </h2>
         </div>
@@ -91,7 +96,9 @@ function OrderDetailModal({
         <div className="px-6 py-5 space-y-5 text-black">
           {/* Items */}
           <div>
-            <p className="font-semibold text-base mb-2">Masakan Yang Dipesan:</p>
+            <p className="font-semibold text-base mb-2">
+              Masakan Yang Dipesan:
+            </p>
             {order.items && order.items.length > 0 ? (
               order.items.map((item) => (
                 <p key={item.menu_id} className="text-sm">
@@ -99,7 +106,9 @@ function OrderDetailModal({
                 </p>
               ))
             ) : (
-              <p className="text-sm text-gray-400 italic">Data item tidak tersedia</p>
+              <p className="text-sm text-gray-400 italic">
+                Data item tidak tersedia
+              </p>
             )}
           </div>
 
@@ -126,16 +135,16 @@ function OrderDetailModal({
                 ID Pembeli: {order.customer_id}
               </p>
             )}
-            {order.location && (
-              <p className="text-sm">{order.location}</p>
-            )}
+            {order.location && <p className="text-sm">{order.location}</p>}
           </div>
 
           {/* Note */}
           <div>
             <p className="font-semibold text-base mb-1">Note Pembeli :</p>
             <p className="text-sm">
-              {order.note || <span className="text-gray-400 italic">Tidak ada catatan</span>}
+              {order.note || (
+                <span className="text-gray-400 italic">Tidak ada catatan</span>
+              )}
             </p>
           </div>
         </div>
@@ -168,14 +177,23 @@ function OrderDetailModal({
 
 // Order Card Component
 
-function OrderCard({ order, onCekDetail }: { order: Order; onCekDetail: () => void }) {
+function OrderCard({
+  order,
+  onCekDetail,
+}: {
+  order: Order;
+  onCekDetail: () => void;
+}) {
   const menuCount = order.items?.length ?? 0;
 
   return (
     <div className="bg-gray-100 rounded-2xl overflow-hidden">
       {/* Order Header */}
       <div className="px-4 pt-4 pb-2 border-b border-gray-300">
-        <h3 className="text-xl font-bold text-black" style={{ fontFamily: "Georgia, serif" }}>
+        <h3
+          className="text-xl font-bold text-black"
+          style={{ fontFamily: "Georgia, serif" }}
+        >
           Order #{order.order_id}
         </h3>
       </div>
@@ -184,7 +202,17 @@ function OrderCard({ order, onCekDetail }: { order: Order; onCekDetail: () => vo
         {/* Location */}
         {order.location && (
           <div className="bg-white rounded-xl px-4 py-2 flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#666"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
               <circle cx="12" cy="10" r="3" />
               <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8z" />
             </svg>
@@ -197,7 +225,10 @@ function OrderCard({ order, onCekDetail }: { order: Order; onCekDetail: () => vo
           <p className="text-sm font-semibold text-black">Rincian Pesanan</p>
           {order.items && order.items.length > 0 ? (
             order.items.map((item) => (
-              <div key={item.menu_id} className="flex justify-between items-center">
+              <div
+                key={item.menu_id}
+                className="flex justify-between items-center"
+              >
                 <p className="text-sm text-black">
                   {item.quantity} x {item.name}
                 </p>
@@ -238,7 +269,7 @@ function OrderCard({ order, onCekDetail }: { order: Order; onCekDetail: () => vo
   );
 }
 
-// Main Page 
+// Main Page
 
 function OrderListContent() {
   const { token } = useAdminAuth();
@@ -250,11 +281,15 @@ function OrderListContent() {
     if (!token) return;
     setFetching(true);
     try {
-      const res = await fetch(`${API_BASE}/api/order`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      const rawOrders: Order[] = data.orders?.rows ?? data.orders ?? [];
+      // const res = await fetch(`${API_BASE}/api/order`, {
+      //   headers: { Authorization: `Bearer ${token}` },
+      // });
+      // const data = await res.json();
+
+      const res = (await getOrders(token)) as ResponseObject;
+      const data = res.data as { orders?: Order[] };
+
+      const rawOrders: Order[] = data?.orders ?? [];
       setOrders(rawOrders);
     } catch {
       alert("Gagal memuat daftar order.");
@@ -269,7 +304,10 @@ function OrderListContent() {
 
   return (
     <div className="px-4 py-4 space-y-4">
-      <h2 className="text-2xl font-bold text-black" style={{ fontFamily: "Georgia, serif" }}>
+      <h2
+        className="text-2xl font-bold text-black"
+        style={{ fontFamily: "Georgia, serif" }}
+      >
         Order List
       </h2>
 
@@ -304,7 +342,7 @@ function OrderListContent() {
   );
 }
 
-// Bottom Navigation 
+// Bottom Navigation
 
 function BottomNav() {
   const router = useRouter();
@@ -313,7 +351,16 @@ function BottomNav() {
     {
       label: "Order",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
           <rect x="9" y="3" width="6" height="4" rx="1" />
           <path d="M9 12h6M9 16h4" />
@@ -325,7 +372,16 @@ function BottomNav() {
     {
       label: "Edit",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>
@@ -335,7 +391,16 @@ function BottomNav() {
     {
       label: "Close",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M9 9l6 6M15 9l-6 6" />
         </svg>
@@ -345,7 +410,16 @@ function BottomNav() {
     {
       label: "Account",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
@@ -363,7 +437,9 @@ function BottomNav() {
           className={`flex flex-col items-center gap-1 px-3 ${item.active ? "opacity-100" : "opacity-70 hover:opacity-100"} transition`}
         >
           <span className="text-white">{item.icon}</span>
-          <span className="text-white text-[10px] font-medium">{item.label}</span>
+          <span className="text-white text-[10px] font-medium">
+            {item.label}
+          </span>
         </button>
       ))}
     </div>
