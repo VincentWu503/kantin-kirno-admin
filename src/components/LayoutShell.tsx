@@ -16,8 +16,10 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <AdminHeader />
-      <main className="flex-1 pb-20">{children}</main>
+      <div className="md:hidden">
+        <AdminHeader />
+      </div>
+      <main className="flex-1 pb-20 md:pb-0 md:pt-16">{children}</main>
       <AdminNavbar />
     </div>
   );
