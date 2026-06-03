@@ -225,8 +225,6 @@ function StatusToggle({
 // Main Content
 
 function StatusContent() {
-  const { token } = useAdminAuth();
-
   const [isOpen, setIsOpen] = useState<boolean | null>(null);
   const [fetching, setFetching] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -254,6 +252,7 @@ function StatusContent() {
   };
 
   const handleConfirm = async () => {
+    const token = localStorage.getItem('admin_token') ||  "";
     if (!token) return;
     const newStatus = isOpen ? "closed" : "open";
     setSaving(true);

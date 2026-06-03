@@ -80,7 +80,7 @@ function AddAdminForm({
   onBack,
   onSuccess,
 }: {
-  token: string;
+  token: string | null;
   onBack: () => void;
   onSuccess: () => void;
 }) {
@@ -102,7 +102,7 @@ function AddAdminForm({
     try {
       const res = await createAdmin(
         { email: email.trim(), password, confirm_password: confirmPassword },
-        token,
+        token || "",
       );
       if (res.status === 200 || res.status === 201) {
         onSuccess();
@@ -186,7 +186,7 @@ function EditAdminForm({
   onSuccess,
 }: {
   item: AdminItem;
-  token: string;
+  token: string | null;
   onBack: () => void;
   onSuccess: () => void;
 }) {
@@ -205,7 +205,7 @@ function EditAdminForm({
       const body: Record<string, string> = {};
       if (email.trim()) body.email = email.trim();
 
-      const res = await updateAdmin(item.admin_id, body, token);
+      const res = await updateAdmin(item.admin_id, body, token || "");
       if (res.status === 200 || res.status === 204) {
         onSuccess();
       } else {
@@ -380,7 +380,7 @@ function AdminList({
 
 function KelolaContent() {
   const router = useRouter();
-  const { token, admin: currentAdmin } = useAdminAuth();
+  const { admin: currentAdmin } = useAdminAuth();
 
   const [admins, setAdmins] = useState<AdminItem[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -391,6 +391,7 @@ function KelolaContent() {
 
   // Hooks must be called unconditionally
   const fetchAdmins = async () => {
+    const token = localStorage.getItem('admin_token');
     if (!token) return;
     setFetching(true);
     try {
@@ -405,11 +406,12 @@ function KelolaContent() {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem('admin_token');
     if (token && currentAdmin) {
       fetchAdmins();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, currentAdmin]);
+  }, [currentAdmin]);
 
   // Guard: hanya super admin yang boleh masuk
   if (currentAdmin && !currentAdmin.super_admin) {
@@ -418,6 +420,7 @@ function KelolaContent() {
   }
 
   const handleDelete = async () => {
+    const token = localStorage.getItem('admin_token');
     if (!deleteTarget || !token) return;
     setDeleteLoading(true);
     try {
@@ -440,7 +443,7 @@ function KelolaContent() {
   if (view === "add") {
     return (
       <AddAdminForm
-        token={token!}
+        token={localStorage.getItem('admin_token')}
         onBack={() => setView("list")}
         onSuccess={() => {
           setView("list");
@@ -454,7 +457,7 @@ function KelolaContent() {
     return (
       <EditAdminForm
         item={editTarget}
-        token={token!}
+        token={localStorage.getItem('admin_token')}
         onBack={() => {
           setView("list");
           setEditTarget(null);

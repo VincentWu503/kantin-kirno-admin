@@ -22,13 +22,11 @@ interface MenuItem {
 function MenuFormModal({
   mode,
   item,
-  token,
   onClose,
   onSuccess,
 }: {
   mode: "add" | "edit";
   item?: MenuItem;
-  token: string;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -43,6 +41,8 @@ function MenuFormModal({
   );
 
   const handleSubmit = async () => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
     if (!name.trim()) return alert("Nama menu wajib diisi.");
     if (!price.trim() || isNaN(Number(price)))
       return alert("Harga harus berupa angka.");
@@ -471,8 +471,6 @@ function BottomNav() {
 // Main Page
 
 function CMSMenuContent() {
-  const { token, getAdminPayload } = useAdminAuth();
-
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [fetching, setFetching] = useState(true);
 
@@ -503,6 +501,7 @@ function CMSMenuContent() {
   }, []);
 
   const handleDelete = async () => {
+    const token = localStorage.getItem('admin_token');
     if (!deleteItem || !token) return;
     setDeleteLoading(true);
     try {
@@ -560,10 +559,9 @@ function CMSMenuContent() {
       <BottomNav />
 
       {/* Modals */}
-      {addModal && token && (
+      {addModal  && (
         <MenuFormModal
           mode="add"
-          token={token}
           onClose={() => setAddModal(false)}
           onSuccess={() => {
             setAddModal(false);
@@ -572,11 +570,10 @@ function CMSMenuContent() {
         />
       )}
 
-      {editItem && token && (
+      {editItem &&  (
         <MenuFormModal
           mode="edit"
           item={editItem}
-          token={token}
           onClose={() => setEditItem(null)}
           onSuccess={() => {
             setEditItem(null);

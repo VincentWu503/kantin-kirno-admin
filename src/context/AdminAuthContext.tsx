@@ -3,10 +3,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AdminUser } from "@/utils/interfaces";
 import { jwtDecode } from "jwt-decode";
-import { useRouter } from "next/navigation";
 
 type AuthStateData = {
-  token: string | null;
   admin: AdminUser | null;
   isLoggedIn: boolean;
   isLoading: boolean;
@@ -16,7 +14,6 @@ const AdminAuthContext = createContext<{
   isLoggedIn: boolean;
   isLoading: boolean;
   admin: AdminUser | null;
-  token: string | null;
   login: (token: string) => void;
   logout: () => void;
   getAdminPayload: () => AdminUser | null;
@@ -25,7 +22,6 @@ const AdminAuthContext = createContext<{
   isLoggedIn: false,
   isLoading: true,
   admin: null,
-  token: null,
   login: () => {},
   logout: () => {},
   getAdminPayload: () => null,
@@ -42,9 +38,7 @@ function decodeJwtPayload(token: string): AdminUser | null {
 }
 
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter();
   const [authState, setAuthState] = useState<AuthStateData>({
-    token: null,
     admin: null,
     isLoggedIn: false,
     isLoading: true,
@@ -59,7 +53,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       const payload = decodeJwtPayload(stored);
       if (payload && payload.admin_id) {
         setAuthState({
-          token: stored,
           admin: payload,
           isLoggedIn: true,
           isLoading: false,
@@ -67,7 +60,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       } else {
         localStorage.removeItem("admin_token");
         setAuthState({
-          token: null,
           admin: null,
           isLoggedIn: false,
           isLoading: false,
@@ -75,7 +67,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       }
     } else {
       setAuthState({
-        token: null,
         admin: null,
         isLoggedIn: false,
         isLoading: false,
@@ -93,7 +84,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       isLoggedIn: true,
       isLoading: false,
       admin: newPayload,
-      token: token,
     });
   };
 
@@ -103,7 +93,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       isLoggedIn: false,
       isLoading: false,
       admin: null,
-      token: null,
     });
   };
 
@@ -119,7 +108,6 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         isLoggedIn: authState.isLoggedIn,
         isLoading: authState.isLoading,
         admin: authState.admin,
-        token: authState.token,
         logout,
         login,
         getAdminPayload,

@@ -18,15 +18,18 @@ interface Order {
   order_id: number;
   customer_id: number;
   total_price: number;
-  location: string | null;
+  // location: string | null;
+  building: string | null;
+  floor: string | null;
+  extra: string | null;
   note: string | null;
   status: string;
   is_takeaway: boolean;
   has_fee: boolean;
   created_at?: string;
   // joined fields (bila backend dikembangkan)
-  customer_name?: string;
-  customer_phone?: string;
+  contact_name?: string;
+  contact_number?: string;
   items?: OrderItem[];
 }
 
@@ -34,12 +37,10 @@ interface Order {
 
 function OrderDetailModal({
   order,
-  token,
   onClose,
   onStatusUpdated,
 }: {
   order: Order;
-  token: string;
   onClose: () => void;
   onStatusUpdated: () => void;
 }) {
@@ -51,6 +52,7 @@ function OrderDetailModal({
   const handleLanjut = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('admin_token') || "";
       // Endpoint patch status (sesuaikan jika backend sudah ada)
       // Sementara menggunakan PATCH /api/order/:id
       const res = await updateOrderStatus(order.order_id, "delivering", token);
@@ -61,7 +63,7 @@ function OrderDetailModal({
         const d = res.data as { message?: string };
         alert(d.message || "Gagal mengupdate status.");
       }
-    } catch {
+    } catch (err: any) {
       // Jika endpoint belum ada, tutup modal saja
       onClose();
     } finally {
@@ -75,10 +77,10 @@ function OrderDetailModal({
         {/* Title */}
         <div className="px-6 pt-6 pb-3 border-b border-gray-200">
           <h2
-            className="text-2xl font-bold text-black"
+            className="text-xl font-bold text-black truncate"
             style={{ fontFamily: "Georgia, serif" }}
           >
-            Update Status Order #{order.order_id}
+            Update Pesanan {order.contact_name}
           </h2>
         </div>
 
@@ -115,17 +117,20 @@ function OrderDetailModal({
           {/* Buyer Info */}
           <div>
             <p className="font-semibold text-base mb-1">Info Pembeli :</p>
-            {order.customer_name ? (
-              <p className="text-sm">
-                {order.customer_name}
-                {order.customer_phone ? ` ( ${order.customer_phone} )` : ""}
-              </p>
-            ) : (
               <p className="text-sm text-gray-400 italic">
-                ID Pembeli: {order.customer_id}
+                Nama Pembeli: {order.contact_name ? order.contact_name : "-"}
               </p>
-            )}
-            {order.location && <p className="text-sm">{order.location}</p>}
+              <p className="text-sm text-gray-400 italic">
+                Nomor WA: {order.contact_number ? order.contact_number : "-"}
+              </p>
+          </div>
+
+          {/* Info Pengantaran*/}
+          <div>
+            <p className="font-semibold text-base mb-1">Info Pengantaran :</p>
+            {order.building && <p 
+              className="text-sm">{`Lt.${order.floor ? order.floor : "-"} Gedung ${order.building}, ${order.extra}`}
+            </p>}
           </div>
 
           {/* Note */}
@@ -184,13 +189,13 @@ function OrderCard({
           className="text-xl font-bold text-black"
           style={{ fontFamily: "Georgia, serif" }}
         >
-          Order #{order.order_id}
+          Pesanan {order.contact_name ? order.contact_name : order.contact_number}
         </h3>
       </div>
 
       <div className="p-3 space-y-2">
         {/* Location */}
-        {order.location && (
+        {(order.building || order.is_takeaway) && (
           <div className="bg-white rounded-xl px-4 py-2 flex items-center gap-2">
             <svg
               width="16"
@@ -206,7 +211,7 @@ function OrderCard({
               <circle cx="12" cy="10" r="3" />
               <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8z" />
             </svg>
-            <p className="text-sm text-gray-700 truncate">{order.location}</p>
+            <p className="text-sm text-gray-700 truncate">{order.building ? order.building : 'Pelanggan ini mau ambil di tempat.'}</p>
           </div>
         )}
 
@@ -262,12 +267,12 @@ function OrderCard({
 // Main Page
 
 function OrderListContent() {
-  const { token } = useAdminAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const fetchOrders = useCallback(async () => {
+    const token = localStorage.getItem('admin_token');
     if (!token) return;
     setFetching(true);
     try {
@@ -286,7 +291,7 @@ function OrderListContent() {
     } finally {
       setFetching(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchOrders();
@@ -320,10 +325,9 @@ function OrderListContent() {
         ))
       )}
 
-      {selectedOrder && token && (
+      {selectedOrder &&  (
         <OrderDetailModal
           order={selectedOrder}
-          token={token}
           onClose={() => setSelectedOrder(null)}
           onStatusUpdated={fetchOrders}
         />
