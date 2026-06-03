@@ -7,10 +7,7 @@ import { CldUploadWidget } from "next-cloudinary";
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
 import { Stack, Switch, Divider, Pagination } from "@mui/material";
-import { upsertMenu } from "@/lib/menu";
-import { ENV } from "@/config/env";
-
-const API_BASE = ENV.API_URL;
+import { upsertMenu, fetchMenu, deleteMenu } from "@/lib/menu";
 
 interface MenuItem {
   menu_id: number;
@@ -372,10 +369,9 @@ function CMSMenuContent() {
   const fetchMenus = async () => {
     setFetching(true);
     try {
-      const res = await fetch(`${API_BASE}/api/menu?offset=${offset}&limit=${limit}`);
-      const data = await res.json();
-      setMenus(data.data?.rows || []);
-      setTotalCount(data.data?.count || 0);
+      const res = await fetchMenu(offset, limit);
+      setMenus(res.data?.data || []);
+      setTotalCount(res.data?.count || 0);
     } catch {
       alert("Gagal memuat menu.");
     } finally {
@@ -397,19 +393,15 @@ function CMSMenuContent() {
     if (!deleteItem || !token) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/menu/${deleteItem.menu_id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok || res.status === 204) {
+      const res = await deleteMenu(deleteItem.menu_id, token);
+      if (res.status === 200 || res.status === 204) {
         setDeleteItem(null);
         fetchMenus();
       } else {
-        const d = await res.json().catch(() => ({}));
-        alert(d.message || "Gagal menghapus menu.");
+        alert(res.data?.message || "Gagal menghapus menu.");
       }
-    } catch {
-      alert("Terjadi kesalahan.");
+    } catch (err: any) {
+      alert(err.message || "Terjadi kesalahan.");
     } finally {
       setDeleteLoading(false);
     }
