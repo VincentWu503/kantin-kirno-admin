@@ -3,9 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { ENV } from "@/config/env";
-
-const API_BASE = ENV.API_URL;
+import { getRestaurantStatus, updateRestaurantStatus } from "@/lib/restaurant";
 
 // SwipeToConfirm Component
 function SwipeToConfirm({
@@ -237,8 +235,8 @@ function StatusContent() {
   const fetchStatus = async () => {
     setFetching(true);
     try {
-      const res = await fetch(`${API_BASE}/api/restaurant/status`);
-      const data = await res.json();
+      const res = await getRestaurantStatus();
+      const data = res.data as { status: string };
       setIsOpen(data.status === "open");
     } catch {
       alert("Gagal memuat status toko.");
@@ -260,20 +258,12 @@ function StatusContent() {
     const newStatus = isOpen ? "closed" : "open";
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/restaurant/status/`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (res.ok || res.status === 204) {
+      const res = await updateRestaurantStatus(newStatus, token);
+      if (res.status === 200 || res.status === 204) {
         setIsOpen(!isOpen);
         setShowConfirm(false);
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = res.data as { message?: string };
         alert(data.message || "Gagal mengubah status toko.");
       }
     } catch {
