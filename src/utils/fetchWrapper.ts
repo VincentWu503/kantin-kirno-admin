@@ -142,6 +142,7 @@ export async function fetchWrapper(
           errorData.statusCode === 401 &&
           errorData.error === "UNAUTHORIZED_ERROR"
         ) {
+          // console.log("test");
           throw new Error(
             JSON.stringify({
               statusCode: 401,

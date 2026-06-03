@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { ENV } from "@/config/env";
-
-const API_BASE = ENV.API_URL;
+import { getAdmins, createAdmin, updateAdmin, deleteAdmin } from "@/lib/admins";
 
 interface AdminItem {
   admin_id: string;
@@ -102,23 +100,14 @@ function AddAdminForm({
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/admin/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-          confirm_password: confirmPassword,
-        }),
-      });
-
-      if (res.ok || res.status === 201) {
+      const res = await createAdmin(
+        { email: email.trim(), password, confirm_password: confirmPassword },
+        token,
+      );
+      if (res.status === 200 || res.status === 201) {
         onSuccess();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = res.data as { message?: string };
         setError(data.message || "Gagal menambah admin.");
       }
     } catch {
@@ -216,19 +205,11 @@ function EditAdminForm({
       const body: Record<string, string> = {};
       if (email.trim()) body.email = email.trim();
 
-      const res = await fetch(`${API_BASE}/api/auth/admin/${item.admin_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (res.ok || res.status === 200) {
+      const res = await updateAdmin(item.admin_id, body, token);
+      if (res.status === 200 || res.status === 204) {
         onSuccess();
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = res.data as { message?: string };
         setError(data.message || "Gagal menyimpan perubahan.");
       }
     } catch {
@@ -413,10 +394,8 @@ function KelolaContent() {
     if (!token) return;
     setFetching(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/admin`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const res = await getAdmins(token);
+      const data = res.data as { data?: AdminItem[]; admins?: AdminItem[] };
       setAdmins(data.data || data.admins || []);
     } catch {
       alert("Gagal memload daftar admin.");
@@ -442,18 +421,12 @@ function KelolaContent() {
     if (!deleteTarget || !token) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/auth/admin/${deleteTarget.admin_id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (res.ok || res.status === 204) {
+      const res = await deleteAdmin(deleteTarget.admin_id, token);
+      if (res.status === 200 || res.status === 204) {
         setDeleteTarget(null);
         fetchAdmins();
       } else {
-        const d = await res.json().catch(() => ({}));
+        const d = res.data as { message?: string };
         alert(d.message || "Gagal menghapus admin.");
       }
     } catch {

@@ -4,11 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { getOrders } from "@/lib/order";
+import { getOrders, updateOrderStatus } from "@/lib/order";
 import { ResponseObject } from "@/utils/interfaces";
-import { ENV } from "@/config/env";
-
-const API_BASE = ENV.API_URL;
 
 interface OrderItem {
   menu_id: number;
@@ -56,20 +53,12 @@ function OrderDetailModal({
     try {
       // Endpoint patch status (sesuaikan jika backend sudah ada)
       // Sementara menggunakan PATCH /api/order/:id
-      const res = await fetch(`${API_BASE}/api/order/${order.order_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: "delivering" }),
-      });
-
-      if (res.ok || res.status === 204) {
+      const res = await updateOrderStatus(order.order_id, "delivering", token);
+      if (res.status === 200 || res.status === 204) {
         onStatusUpdated();
         onClose();
       } else {
-        const d = await res.json().catch(() => ({}));
+        const d = res.data as { message?: string };
         alert(d.message || "Gagal mengupdate status.");
       }
     } catch {

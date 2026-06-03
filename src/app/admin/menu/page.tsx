@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { CldUploadWidget } from "next-cloudinary";
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
-import { Stack, Switch, Divider } from "@mui/material";
-import { upsertMenu } from "@/lib/menu";
-import { ENV } from "@/config/env";
-
-const API_BASE = ENV.API_URL;
+import { Stack, Switch } from "@mui/material";
+import { upsertMenu, fetchMenu, deleteMenu } from "@/lib/menu";
 
 interface MenuItem {
   menu_id: number;
@@ -487,9 +484,13 @@ function CMSMenuContent() {
   const fetchMenus = async () => {
     setFetching(true);
     try {
-      const res = await fetch(`${API_BASE}/api/menu`);
-      const data = await res.json();
-      setMenus(data.data?.rows || data.data || []);
+      const res = await fetchMenu(0, 100);
+      const data = res.data as { data?: { rows?: MenuItem[] } | MenuItem[] };
+      setMenus(
+        (data.data as { rows?: MenuItem[] })?.rows ||
+          (data.data as MenuItem[]) ||
+          [],
+      );
     } catch {
       alert("Gagal memuat menu.");
     } finally {
@@ -505,15 +506,12 @@ function CMSMenuContent() {
     if (!deleteItem || !token) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/menu/${deleteItem.menu_id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok || res.status === 204) {
+      const res = await deleteMenu(deleteItem.menu_id, token!);
+      if (res.status === 200 || res.status === 204) {
         setDeleteItem(null);
         fetchMenus();
       } else {
-        const d = await res.json().catch(() => ({}));
+        const d = res.data as { message?: string };
         alert(d.message || "Gagal menghapus menu.");
       }
     } catch {
