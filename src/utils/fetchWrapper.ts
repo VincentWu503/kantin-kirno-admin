@@ -29,7 +29,7 @@ export async function fetchWrapper(
   options: RequestInit = {},
 ): Promise<ResponseObject> {
   let token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
   if (refreshPromise) {
     try {
@@ -83,13 +83,13 @@ export async function fetchWrapper(
         if (!refreshPromise) {
           console.log("Refresh token sedang dipanggil...");
           refreshPromise = (async () => {
-            const currentToken = localStorage.getItem("token") || "";
+            const currentToken = localStorage.getItem("admin_token") || "";
             const res = await refreshAccessToken(currentToken);
 
             const data = res.data as TokenData;
             const newToken = data.token;
 
-            localStorage.setItem("token", newToken);
+            localStorage.setItem("admin_token", newToken);
             return newToken;
           })();
         }
@@ -109,7 +109,7 @@ export async function fetchWrapper(
         try {
           const oldToken =
             typeof window !== "undefined"
-              ? localStorage.getItem("token")
+              ? localStorage.getItem("admin_token")
               : null;
           const currToken = oldToken || token;
           if (currToken) {
@@ -119,7 +119,7 @@ export async function fetchWrapper(
           console.error(err.message);
         }
 
-        localStorage.removeItem("token");
+        localStorage.removeItem("admin_token");
 
         let errorData;
         try {

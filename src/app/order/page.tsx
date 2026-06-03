@@ -23,7 +23,7 @@ interface Order {
   floor: string | null;
   extra: string | null;
   note: string | null;
-  status: string;
+  order_status: string;
   is_takeaway: boolean;
   has_fee: boolean;
   created_at?: string;
@@ -49,13 +49,33 @@ function OrderDetailModal({
   // Hitung jumlah menu unik
   const menuCount = order.items?.length ?? 0;
 
+  const getNextStatus = (current: string) => {
+    switch(current) {
+      case "PENDING": return "PROCESSING";
+      case "PROCESSING": return "READY";
+      case "READY": return "COMPLETED";
+      default: return null;
+    }
+  };
+
+  const nextStatus = getNextStatus(order.order_status);
+
+  const getButtonText = (current: string) => {
+    switch(current) {
+      case "PENDING": return "Terima & Proses Pesanan";
+      case "PROCESSING": return "Pesanan Siap Diambil/Diantar";
+      case "READY": return "Pesanan Selesai";
+      default: return "Selesai";
+    }
+  };
+
   const handleLanjut = async () => {
+    if (!nextStatus) return;
+
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token') || "";
-      // Endpoint patch status (sesuaikan jika backend sudah ada)
-      // Sementara menggunakan PATCH /api/order/:id
-      const res = await updateOrderStatus(order.order_id, "delivering", token);
+      const res = await updateOrderStatus(order.order_id, nextStatus, token);
       if (res.status === 200 || res.status === 204) {
         onStatusUpdated();
         onClose();
@@ -64,7 +84,6 @@ function OrderDetailModal({
         alert(d.message || "Gagal mengupdate status.");
       }
     } catch (err: any) {
-      // Jika endpoint belum ada, tutup modal saja
       onClose();
     } finally {
       setLoading(false);
@@ -157,13 +176,15 @@ function OrderDetailModal({
           </button>
 
           {/* Lanjut button */}
-          <button
-            onClick={handleLanjut}
-            disabled={loading}
-            className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-semibold transition active:scale-95 disabled:opacity-50"
-          >
-            {loading ? "Memproses..." : "Lanjut Ke Pengantaran makanan"}
-          </button>
+          {nextStatus && (
+            <button
+              onClick={handleLanjut}
+              disabled={loading}
+              className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-semibold transition active:scale-95 disabled:opacity-50"
+            >
+              {loading ? "Memproses..." : getButtonText(order.order_status)}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -247,7 +268,7 @@ function OrderCard({
             </div>
             <p className="text-sm text-black">
               Status:{" "}
-              <span className="font-medium">[{order.status ?? "pending"}]</span>
+              <span className="font-medium">[{order.order_status ?? "PENDING"}]</span>
             </p>
           </div>
         </div>
