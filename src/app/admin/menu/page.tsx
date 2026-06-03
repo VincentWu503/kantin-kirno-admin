@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { CldUploadWidget } from "next-cloudinary";
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
-import { Stack, Switch } from "@mui/material";
-import { upsertMenu, fetchMenu, deleteMenu } from "@/lib/menu";
+import { Stack, Switch, Divider, Pagination } from "@mui/material";
+import { upsertMenu } from "@/lib/menu";
+import { ENV } from "@/config/env";
+
+const API_BASE = ENV.API_URL;
 
 interface MenuItem {
   menu_id: number;
@@ -56,24 +59,12 @@ function MenuFormModal({
       };
       if (imagePreview) body.image_url = imagePreview;
 
-      // const url =
-      //   mode === "add"
-      //     ? `${API_BASE}/api/menu`
-      //     : `${API_BASE}/api/menu/${item!.menu_id}`;
       const url = mode === "add" ? `/menu` : `/menu/${item!.menu_id}`;
 
-      // const response = await fetch(url, {
-      //   method: mode === "add" ? "POST" : "PATCH",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify(body),
-      // });
       const response = await upsertMenu(url, {
         mode: mode,
         token: token,
-        body: body, // JSON stringify di lib
+        body: body,
       });
 
       if (response.status === 201 || response.status === 204) {
@@ -112,7 +103,6 @@ function MenuFormModal({
             </span>
           )}
         </div>
-        {/* <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} /> */}
 
         {/* Name Field */}
         <div>
@@ -174,7 +164,6 @@ function MenuFormModal({
         <div>
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
-            // profil bakal beda folder
             options={
               {
                 ...uploadOptions(
@@ -185,9 +174,6 @@ function MenuFormModal({
             }
             onSuccess={(result, { widget }) => {
               const info = result?.info as any;
-
-              // setCloudinaryResponse(info);  // { public_id, secure_url, etc }
-
               if (info.secure_url) setImagePreview(info.secure_url);
             }}
           >
@@ -299,7 +285,7 @@ function MenuCard({
             spacing={1}
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <span className="text-black text-sm font-medium truncate">
+            <span className="text-black text-sm font-medium truncate" title={item.name}>
               {item.name}
             </span>
             {item.is_available ? (
@@ -364,114 +350,16 @@ function MenuCard({
   );
 }
 
-// Bottom Navigation
-
-function BottomNav() {
-  const router = useRouter();
-
-  const items = [
-    {
-      label: "Order",
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-          <rect x="9" y="3" width="6" height="4" rx="1" />
-          <path d="M9 12h6M9 16h4" />
-        </svg>
-      ),
-      onClick: () => router.push("/order"),
-    },
-    {
-      label: "Edit",
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
-      ),
-      onClick: () => {},
-      active: true,
-    },
-    {
-      label: "Close",
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M9 9l6 6M15 9l-6 6" />
-        </svg>
-      ),
-      onClick: () => router.push("/admin/status"),
-    },
-    {
-      label: "Account",
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-      onClick: () => router.push("/admin/account"),
-    },
-  ];
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 bg-blue-500 flex items-center justify-around py-3 px-2 z-40">
-      {items.map((item) => (
-        <button
-          key={item.label}
-          onClick={item.onClick}
-          className={`flex flex-col items-center gap-1 px-3 ${item.active ? "opacity-100" : "opacity-70 hover:opacity-100"} transition`}
-        >
-          <span className="text-white">{item.icon}</span>
-          <span className="text-white text-[10px] font-medium">
-            {item.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // Main Page
 
 function CMSMenuContent() {
-  const { token, getAdminPayload } = useAdminAuth();
+  const { token } = useAdminAuth();
+
+  const LIMIT_DEFAULT = 8;
+  const [limit] = useState(LIMIT_DEFAULT);
+  const [page, setPage] = useState(1);
+  const [offset, setOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -484,13 +372,10 @@ function CMSMenuContent() {
   const fetchMenus = async () => {
     setFetching(true);
     try {
-      const res = await fetchMenu(0, 100);
-      const data = res.data as { data?: { rows?: MenuItem[] } | MenuItem[] };
-      setMenus(
-        (data.data as { rows?: MenuItem[] })?.rows ||
-          (data.data as MenuItem[]) ||
-          [],
-      );
+      const res = await fetch(`${API_BASE}/api/menu?offset=${offset}&limit=${limit}`);
+      const data = await res.json();
+      setMenus(data.data?.rows || []);
+      setTotalCount(data.data?.count || 0);
     } catch {
       alert("Gagal memuat menu.");
     } finally {
@@ -500,18 +385,27 @@ function CMSMenuContent() {
 
   useEffect(() => {
     fetchMenus();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offset, limit]);
+
+  function handlePageChange(event: ChangeEvent<unknown>, value: number) {
+    setOffset((value - 1) * limit);
+    setPage(value);
+  }
 
   const handleDelete = async () => {
     if (!deleteItem || !token) return;
     setDeleteLoading(true);
     try {
-      const res = await deleteMenu(deleteItem.menu_id, token!);
-      if (res.status === 200 || res.status === 204) {
+      const res = await fetch(`${API_BASE}/api/menu/${deleteItem.menu_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok || res.status === 204) {
         setDeleteItem(null);
         fetchMenus();
       } else {
-        const d = res.data as { message?: string };
+        const d = await res.json().catch(() => ({}));
         alert(d.message || "Gagal menghapus menu.");
       }
     } catch {
@@ -523,16 +417,18 @@ function CMSMenuContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      {/* Grid */}
+      {/* Tombol Tambah */}
       <div className="p-4 flex items-end justify-end">
         <button
           onClick={() => setAddModal(true)}
-          className="fixed bottom-32 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95 shadow-lg z-30"
+          className="fixed bottom-24 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95 shadow-lg z-30 md:bottom-10 md:right-10"
           title="Tambah Menu"
         >
           <span className="text-white text-3xl font-light leading-none">+</span>
         </button>
       </div>
+      
+      {/* Grid */}
       <div className="p-4">
         {fetching ? (
           <div className="flex justify-center items-center h-48">
@@ -544,20 +440,40 @@ function CMSMenuContent() {
             <p className="text-sm">Belum ada menu. Tekan + untuk menambah.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {menus.map((item) => (
-              <MenuCard
-                key={item.menu_id}
-                item={item}
-                onEdit={() => setEditItem(item)}
-                onDelete={() => setDeleteItem(item)}
-              />
-            ))}
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {menus.map((item) => (
+                <MenuCard
+                  key={item.menu_id}
+                  item={item}
+                  onEdit={() => setEditItem(item)}
+                  onDelete={() => setDeleteItem(item)}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalCount > 0 && (
+              <div className="flex flex-col items-center pt-6 pb-2 gap-4 w-full">
+                {page >= Math.ceil(totalCount / limit) && (
+                  <Divider className="text-xs px-6 mb-2 w-full text-gray-400">
+                    Anda telah mencapai akhir halaman~
+                  </Divider>
+                )}
+                <Pagination
+                  count={Math.ceil(totalCount / limit)}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  shape="rounded"
+                  size="medium"
+                  siblingCount={1}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      <BottomNav />
 
       {/* Modals */}
       {addModal && token && (
