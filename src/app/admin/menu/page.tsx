@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget } from "next-cloudinary";
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
 import { Stack, Switch, Divider } from "@mui/material";
 import { upsertMenu } from "@/lib/menu";
+import { ENV } from "@/config/env";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = ENV.API_URL;
 
 interface MenuItem {
   menu_id: number;
@@ -19,7 +20,7 @@ interface MenuItem {
   is_available: boolean;
 }
 
-// Modal Tambah / Edit Menu 
+// Modal Tambah / Edit Menu
 
 function MenuFormModal({
   mode,
@@ -36,13 +37,18 @@ function MenuFormModal({
 }) {
   const [name, setName] = useState(item?.name || "");
   const [price, setPrice] = useState(item?.price?.toString() || "");
-  const [imagePreview, setImagePreview] = useState<string>(item?.image_url || "");
+  const [imagePreview, setImagePreview] = useState<string>(
+    item?.image_url || "",
+  );
   const [loading, setLoading] = useState(false);
-  const [stockAvailable, setStockAvailable] = useState<boolean>(item?.is_available ?? true);
+  const [stockAvailable, setStockAvailable] = useState<boolean>(
+    item?.is_available ?? true,
+  );
 
   const handleSubmit = async () => {
     if (!name.trim()) return alert("Nama menu wajib diisi.");
-    if (!price.trim() || isNaN(Number(price))) return alert("Harga harus berupa angka.");
+    if (!price.trim() || isNaN(Number(price)))
+      return alert("Harga harus berupa angka.");
 
     setLoading(true);
     try {
@@ -57,10 +63,7 @@ function MenuFormModal({
       //   mode === "add"
       //     ? `${API_BASE}/api/menu`
       //     : `${API_BASE}/api/menu/${item!.menu_id}`;
-      const url =
-        mode === "add"
-          ? `/menu`
-          : `/menu/${item!.menu_id}`;
+      const url = mode === "add" ? `/menu` : `/menu/${item!.menu_id}`;
 
       // const response = await fetch(url, {
       //   method: mode === "add" ? "POST" : "PATCH",
@@ -74,11 +77,11 @@ function MenuFormModal({
         mode: mode,
         token: token,
         body: body, // JSON stringify di lib
-      })
+      });
 
       if (response.status === 201 || response.status === 204) {
         onSuccess();
-      } 
+      }
     } catch (err: any) {
       console.error(err);
       alert("Terjadi kesalahan koneksi.");
@@ -101,9 +104,15 @@ function MenuFormModal({
           style={{ height: 160 }}
         >
           {imagePreview ? (
-            <img src={imagePreview} alt="preview" className="w-full h-full object-cover rounded-2xl" />
+            <img
+              src={imagePreview}
+              alt="preview"
+              className="w-full h-full object-cover rounded-2xl"
+            />
           ) : (
-            <span className="text-white text-5xl font-thin text-base text-center">Gambar menu akan ditampilkan di sini.</span>
+            <span className="text-white text-5xl font-thin text-base text-center">
+              Gambar menu akan ditampilkan di sini.
+            </span>
           )}
         </div>
         {/* <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} /> */}
@@ -137,35 +146,51 @@ function MenuFormModal({
         </div>
 
         {/* Toggle stok tersedia  */}
-        {mode !== "add" && 
-          <div> 
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between'}}>
+        {mode !== "add" && (
+          <div>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: "center", justifyContent: "space-between" }}
+            >
               <label className="block text-sm font-medium text-black mb-1">
                 Edit Stok
               </label>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <span className="block text-sm font-medium text-black mb-1">Habis</span>
-                    <Switch color="success" 
-                            defaultChecked={item?.is_available} 
-                            onChange={(e) => setStockAvailable(e.target.checked)}
-                    />   
-                <span className="block text-sm font-medium text-black mb-1">Tersedia</span>
-              </Stack>     
-            </Stack>    
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <span className="block text-sm font-medium text-black mb-1">
+                  Habis
+                </span>
+                <Switch
+                  color="success"
+                  defaultChecked={item?.is_available}
+                  onChange={(e) => setStockAvailable(e.target.checked)}
+                />
+                <span className="block text-sm font-medium text-black mb-1">
+                  Tersedia
+                </span>
+              </Stack>
+            </Stack>
           </div>
-        }
+        )}
 
         {/* Cloudinary upload widget (signed) */}
-        <div>       
+        <div>
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
             // profil bakal beda folder
-            options={{...uploadOptions(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER, item?.name)} as any}
+            options={
+              {
+                ...uploadOptions(
+                  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER,
+                  item?.name,
+                ),
+              } as any
+            }
             onSuccess={(result, { widget }) => {
-              const info = result?.info as any
+              const info = result?.info as any;
 
               // setCloudinaryResponse(info);  // { public_id, secure_url, etc }
-              
+
               if (info.secure_url) setImagePreview(info.secure_url);
             }}
           >
@@ -174,10 +199,11 @@ function MenuFormModal({
                 open();
               }
               return (
-                <button onClick={handleOnClick} 
-                        className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-base font-semibold transition active:scale-95 disabled:opacity-50"
+                <button
+                  onClick={handleOnClick}
+                  className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-base font-semibold transition active:scale-95 disabled:opacity-50"
                 >
-                  { mode === "add" ? "Upload Gambar" : "Ganti Gambar"}
+                  {mode === "add" ? "Upload Gambar" : "Ganti Gambar"}
                 </button>
               );
             }}
@@ -190,14 +216,18 @@ function MenuFormModal({
           disabled={loading}
           className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-base font-semibold transition active:scale-95 disabled:opacity-50"
         >
-          {loading ? "Menyimpan..." : mode === "add" ? "Tambah Menu" : "Edit Menu"}
+          {loading
+            ? "Menyimpan..."
+            : mode === "add"
+              ? "Tambah Menu"
+              : "Edit Menu"}
         </button>
       </div>
     </div>
   );
 }
 
-// Delete Confirmation 
+// Delete Confirmation
 
 function DeleteModal({
   onConfirm,
@@ -235,7 +265,7 @@ function DeleteModal({
   );
 }
 
-// Menu Card 
+// Menu Card
 
 function MenuCard({
   item,
@@ -250,9 +280,16 @@ function MenuCard({
     <div className="bg-black-500 flex flex-col gap-2">
       <div className="rounded-2xl p-2 flex flex-col gap-2">
         {/* Image */}
-        <div className="bg-red-400 rounded-xl overflow-hidden" style={{ height: 120 }}>
+        <div
+          className="bg-red-400 rounded-xl overflow-hidden"
+          style={{ height: 120 }}
+        >
           {item.image_url ? (
-            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className="w-full h-full bg-red-400" />
           )}
@@ -260,18 +297,26 @@ function MenuCard({
 
         {/* Info */}
         <div className="px-1">
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent:'space-between'}}>
-              <span className="text-black text-sm font-medium truncate">{item.name}</span>
-              {
-                item.is_available ? 
-                <span className="text-green-600 text-sm font">Tersedia</span> : 
-                <span className="text-red-700 text-sm font">Habis</span>
-              }
-          </Stack>   
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: "center", justifyContent: "space-between" }}
+          >
+            <span className="text-black text-sm font-medium truncate">
+              {item.name}
+            </span>
+            {item.is_available ? (
+              <span className="text-green-600 text-sm font">Tersedia</span>
+            ) : (
+              <span className="text-red-700 text-sm font">Habis</span>
+            )}
+          </Stack>
           <div className="flex justify-between items-center">
             <p className="text-black text-xs">Harga</p>
             <p className="text-black text-xs font-semibold">
-              {item.price ? `Rp ${item.price.toLocaleString("id-ID")}` : "------"}
+              {item.price
+                ? `Rp ${item.price.toLocaleString("id-ID")}`
+                : "------"}
             </p>
           </div>
         </div>
@@ -283,7 +328,16 @@ function MenuCard({
           onClick={onEdit}
           className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl flex items-center justify-center transition active:scale-95"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
@@ -292,7 +346,16 @@ function MenuCard({
           onClick={onDelete}
           className="flex-1 py-2.5 bg-red-400 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition active:scale-95"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
             <path d="M10 11v6M14 11v6" />
@@ -304,7 +367,7 @@ function MenuCard({
   );
 }
 
-// Bottom Navigation 
+// Bottom Navigation
 
 function BottomNav() {
   const router = useRouter();
@@ -313,7 +376,16 @@ function BottomNav() {
     {
       label: "Order",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
           <rect x="9" y="3" width="6" height="4" rx="1" />
           <path d="M9 12h6M9 16h4" />
@@ -324,7 +396,16 @@ function BottomNav() {
     {
       label: "Edit",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
         </svg>
@@ -335,7 +416,16 @@ function BottomNav() {
     {
       label: "Close",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M9 9l6 6M15 9l-6 6" />
         </svg>
@@ -345,7 +435,16 @@ function BottomNav() {
     {
       label: "Account",
       icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
@@ -363,14 +462,16 @@ function BottomNav() {
           className={`flex flex-col items-center gap-1 px-3 ${item.active ? "opacity-100" : "opacity-70 hover:opacity-100"} transition`}
         >
           <span className="text-white">{item.icon}</span>
-          <span className="text-white text-[10px] font-medium">{item.label}</span>
+          <span className="text-white text-[10px] font-medium">
+            {item.label}
+          </span>
         </button>
       ))}
     </div>
   );
 }
 
-// Main Page 
+// Main Page
 
 function CMSMenuContent() {
   const { token, getAdminPayload } = useAdminAuth();
