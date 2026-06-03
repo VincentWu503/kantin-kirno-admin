@@ -6,9 +6,8 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
 import { getOrders } from "@/lib/order";
 import { ResponseObject } from "@/utils/interfaces";
-import { ENV } from "@/config/env";
 
-const API_BASE = ENV.API_URL;
+const API_BASE = "http://localhost:5000";
 
 interface OrderItem {
   menu_id: number;
