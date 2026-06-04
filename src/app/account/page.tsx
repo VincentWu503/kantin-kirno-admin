@@ -29,6 +29,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/order"),
+      active: false,
     },
     {
       label: "Edit",
@@ -48,6 +49,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/admin/menu"),
+      active: false
     },
     {
       label: "Close",
@@ -67,6 +69,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/admin/status"),
+      active: false
     },
     {
       label: "Account",
@@ -86,6 +89,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/account"),
+      active: true,
     },
   ];
 
