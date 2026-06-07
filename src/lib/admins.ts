@@ -123,14 +123,14 @@ export async function createAdmin(
     throw err;
   }
 }
-
+// prefixed admin bc backend told so
 export async function updateAdmin(
   adminId: string,
-  body: Record<string, string>,
+  body: Record<string, string | boolean>,
   accessToken: string,
 ): Promise<ResponseObject> {
   try {
-    const result = await fetchWrapper(`/auth/admin/${adminId}`, {
+    const result = await fetchWrapper(`/auth/admin/admin-${adminId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -150,7 +150,7 @@ export async function deleteAdmin(
   accessToken: string,
 ): Promise<ResponseObject> {
   try {
-    const result = await fetchWrapper(`/auth/admin/${adminId}`, {
+    const result = await fetchWrapper(`/auth/admin/admin-${adminId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${accessToken}`,

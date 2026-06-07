@@ -11,6 +11,7 @@ import {
   deleteAdmin,
   handleSessionExpiredError,
 } from "@/lib/admins";
+import { Checkbox, FormControlLabel } from "@mui/material";
 
 interface AdminItem {
   admin_id: string;
@@ -197,6 +198,7 @@ function EditAdminForm({
   onSuccess: () => void;
 }) {
   const [email, setEmail] = useState(item.email);
+  const [superAdmin, setSuperAdmin] = useState(item.super_admin);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -208,10 +210,13 @@ function EditAdminForm({
 
     setLoading(true);
     try {
-      const body: Record<string, string> = {};
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      const body: Record<string, string | boolean> = {};
       if (email.trim()) body.email = email.trim();
+      if (superAdmin !== item.super_admin) body.super_admin = superAdmin;
 
-      const res = await updateAdmin(item.admin_id, body, token || "");
+      const res = await updateAdmin(item.admin_id, body, token);
       if (res.status === 200 || res.status === 204) {
         onSuccess();
       } else {
@@ -240,6 +245,19 @@ function EditAdminForm({
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-white rounded-xl px-4 py-3 text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
+          </div>
+          {/* Toggle Super Admin*/}
+          <div>
+            <div className="flex justify-between items-center gap-2">
+              <label className="w-full block text-black text-base mb-1">
+                Jadikan Super Admin
+              </label>
+              <input
+                type="checkbox"
+                onChange={(e) => setSuperAdmin(e.target.checked)}
+                className=" w-[1.25em] h-[1.25em] shrink-0 bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+            </div>
           </div>
 
           {/* Error */}
