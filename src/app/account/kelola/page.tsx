@@ -11,7 +11,6 @@ import {
   deleteAdmin,
   handleSessionExpiredError,
 } from "@/lib/admins";
-import { Checkbox, FormControlLabel } from "@mui/material";
 
 interface AdminItem {
   admin_id: string;
@@ -256,6 +255,7 @@ function EditAdminForm({
                 type="checkbox"
                 onChange={(e) => setSuperAdmin(e.target.checked)}
                 className=" w-[1.25em] h-[1.25em] shrink-0 bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                checked={superAdmin}
               />
             </div>
           </div>
