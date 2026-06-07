@@ -1,6 +1,22 @@
 import { fetchWrapper } from "@/utils/fetchWrapper";
 import { ResponseObject } from "@/utils/interfaces";
 
+export async function handleSessionExpiredError(
+  error: any,
+  logout: () => void,
+) {
+  try {
+    const err = JSON.parse(error.message);
+
+    if (
+      err.statusCode === 401 &&
+      err.message === "Sesi Anda telah berakhir! Harap login ulang."
+    ) {
+      await logout();
+    } else return;
+  } catch {}
+}
+
 export async function refreshAccessToken(
   accessToken: string,
 ): Promise<ResponseObject> {
@@ -60,6 +76,7 @@ export async function handleLoginApi(
   try {
     const result = await fetchWrapper(`/auth/admin/login`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },

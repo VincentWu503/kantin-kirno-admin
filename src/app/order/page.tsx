@@ -6,6 +6,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
 import { getOrders, updateOrderStatus } from "@/lib/order";
 import { ResponseObject } from "@/utils/interfaces";
+import { handleSessionExpiredError } from "@/lib/admins";
 
 interface OrderItem {
   menu_id: number;
@@ -50,22 +51,30 @@ function OrderDetailModal({
   const menuCount = order.items?.length ?? 0;
 
   const getNextStatus = (current: string) => {
-    switch(current) {
-      case "PENDING": return "PROCESSING";
-      case "PROCESSING": return "READY";
-      case "READY": return "COMPLETED";
-      default: return null;
+    switch (current) {
+      case "PENDING":
+        return "PROCESSING";
+      case "PROCESSING":
+        return "READY";
+      case "READY":
+        return "COMPLETED";
+      default:
+        return null;
     }
   };
 
   const nextStatus = getNextStatus(order.order_status);
 
   const getButtonText = (current: string) => {
-    switch(current) {
-      case "PENDING": return "Terima & Proses Pesanan";
-      case "PROCESSING": return "Pesanan Siap Diambil/Diantar";
-      case "READY": return "Pesanan Selesai";
-      default: return "Selesai";
+    switch (current) {
+      case "PENDING":
+        return "Terima & Proses Pesanan";
+      case "PROCESSING":
+        return "Pesanan Siap Diambil/Diantar";
+      case "READY":
+        return "Pesanan Selesai";
+      default:
+        return "Selesai";
     }
   };
 
@@ -74,7 +83,8 @@ function OrderDetailModal({
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('admin_token') || "";
+      if (typeof window === "undefined") return;
+      const token = localStorage.getItem("admin_token") || "";
       const res = await updateOrderStatus(order.order_id, nextStatus, token);
       if (res.status === 200 || res.status === 204) {
         onStatusUpdated();
@@ -136,20 +146,22 @@ function OrderDetailModal({
           {/* Buyer Info */}
           <div>
             <p className="font-semibold text-base mb-1">Info Pembeli :</p>
-              <p className="text-sm text-gray-400 italic">
-                Nama Pembeli: {order.contact_name ? order.contact_name : "-"}
-              </p>
-              <p className="text-sm text-gray-400 italic">
-                Nomor WA: {order.contact_number ? order.contact_number : "-"}
-              </p>
+            <p className="text-sm text-gray-400 italic">
+              Nama Pembeli: {order.contact_name ? order.contact_name : "-"}
+            </p>
+            <p className="text-sm text-gray-400 italic">
+              Nomor WA: {order.contact_number ? order.contact_number : "-"}
+            </p>
           </div>
 
           {/* Info Pengantaran*/}
           <div>
             <p className="font-semibold text-base mb-1">Info Pengantaran :</p>
-            {order.building && <p 
-              className="text-sm">{`Lt.${order.floor ? order.floor : "-"} Gedung ${order.building}, ${order.extra}`}
-            </p>}
+            {order.building && (
+              <p className="text-sm">
+                {`Lt.${order.floor ? order.floor : "-"} Gedung ${order.building}, ${order.extra}`}
+              </p>
+            )}
           </div>
 
           {/* Note */}
@@ -210,7 +222,8 @@ function OrderCard({
           className="text-xl font-bold text-black"
           style={{ fontFamily: "Georgia, serif" }}
         >
-          Pesanan {order.contact_name ? order.contact_name : order.contact_number}
+          Pesanan{" "}
+          {order.contact_name ? order.contact_name : order.contact_number}
         </h3>
       </div>
 
@@ -232,7 +245,11 @@ function OrderCard({
               <circle cx="12" cy="10" r="3" />
               <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8z" />
             </svg>
-            <p className="text-sm text-gray-700 truncate">{order.building ? order.building : 'Pelanggan ini mau ambil di tempat.'}</p>
+            <p className="text-sm text-gray-700 truncate">
+              {order.building
+                ? order.building
+                : "Pelanggan ini mau ambil di tempat."}
+            </p>
           </div>
         )}
 
@@ -268,7 +285,9 @@ function OrderCard({
             </div>
             <p className="text-sm text-black">
               Status:{" "}
-              <span className="font-medium">[{order.order_status ?? "PENDING"}]</span>
+              <span className="font-medium">
+                [{order.order_status ?? "PENDING"}]
+              </span>
             </p>
           </div>
         </div>
@@ -291,9 +310,10 @@ function OrderListContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { logout } = useAdminAuth();
 
   const fetchOrders = useCallback(async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!token) return;
     setFetching(true);
     try {
@@ -307,12 +327,13 @@ function OrderListContent() {
 
       const rawOrders: Order[] = data?.orders ?? [];
       setOrders(rawOrders);
-    } catch {
+    } catch (error: any) {
+      await handleSessionExpiredError(error, logout);
       alert("Gagal memuat daftar order.");
     } finally {
       setFetching(false);
     }
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     fetchOrders();
@@ -326,7 +347,6 @@ function OrderListContent() {
       >
         Order List
       </h2>
-
       {fetching ? (
         <div className="flex justify-center items-center h-48">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -345,14 +365,13 @@ function OrderListContent() {
           />
         ))
       )}
-
-      {selectedOrder &&  (
+      {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onStatusUpdated={fetchOrders}
         />
-      )}
+      )}{" "}
     </div>
   );
 }

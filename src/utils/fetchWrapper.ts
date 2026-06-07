@@ -31,6 +31,8 @@ export async function fetchWrapper(
   let token =
     typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
+  console.log(token);
+
   if (refreshPromise) {
     try {
       const waitedToken = await refreshPromise;

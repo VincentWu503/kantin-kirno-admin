@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { getAdmins, createAdmin, updateAdmin, deleteAdmin } from "@/lib/admins";
+import {
+  getAdmins,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
+  handleSessionExpiredError,
+} from "@/lib/admins";
 
 interface AdminItem {
   admin_id: string;
@@ -388,17 +394,19 @@ function KelolaContent() {
   const [editTarget, setEditTarget] = useState<AdminItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminItem | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const { logout } = useAdminAuth();
 
   // Hooks must be called unconditionally
   const fetchAdmins = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!token) return;
     setFetching(true);
     try {
       const res = await getAdmins(token);
       const data = res.data as { data?: AdminItem[]; admins?: AdminItem[] };
       setAdmins(data.data || data.admins || []);
-    } catch {
+    } catch (err: any) {
+      await handleSessionExpiredError(err, logout);
       alert("Gagal memload daftar admin.");
     } finally {
       setFetching(false);
@@ -406,7 +414,7 @@ function KelolaContent() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (token && currentAdmin) {
       fetchAdmins();
     }
@@ -420,7 +428,7 @@ function KelolaContent() {
   }
 
   const handleDelete = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!deleteTarget || !token) return;
     setDeleteLoading(true);
     try {
@@ -432,7 +440,8 @@ function KelolaContent() {
         const d = res.data as { message?: string };
         alert(d.message || "Gagal menghapus admin.");
       }
-    } catch {
+    } catch (err: any) {
+      await handleSessionExpiredError(err, logout);
       alert("Terjadi kesalahan.");
     } finally {
       setDeleteLoading(false);
@@ -443,7 +452,7 @@ function KelolaContent() {
   if (view === "add") {
     return (
       <AddAdminForm
-        token={localStorage.getItem('admin_token')}
+        token={localStorage.getItem("admin_token")}
         onBack={() => setView("list")}
         onSuccess={() => {
           setView("list");
@@ -457,7 +466,7 @@ function KelolaContent() {
     return (
       <EditAdminForm
         item={editTarget}
-        token={localStorage.getItem('admin_token')}
+        token={localStorage.getItem("admin_token")}
         onBack={() => {
           setView("list");
           setEditTarget(null);

@@ -1,8 +1,16 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { AdminUser } from "@/utils/interfaces";
 import { jwtDecode } from "jwt-decode";
+import { handleLogoutApi } from "@/lib/admins";
+import { useRouter } from "next/navigation";
 
 type AuthStateData = {
   admin: AdminUser | null;
@@ -37,12 +45,18 @@ function decodeJwtPayload(token: string): AdminUser | null {
   }
 }
 
-export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AdminAuthProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [authState, setAuthState] = useState<AuthStateData>({
     admin: null,
     isLoggedIn: false,
     isLoading: true,
   });
+
+  const router = useRouter();
 
   // Initialize auth from localStorage on mount
   useEffect(() => {
@@ -87,21 +101,28 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
     });
   };
 
-  const logout = () => {
+  // client side and api logout handling
+  const logout = async () => {
+    const token = localStorage.getItem("admin_token") || "";
+    await handleLogoutApi(token);
     localStorage.removeItem("admin_token");
     setAuthState({
       isLoggedIn: false,
       isLoading: false,
       admin: null,
     });
+
+    router.replace("/admin/login");
   };
 
   const getAdminPayload = () => {
     return authState.admin || null;
   };
 
-  const getAuthState = () => { return authState || null };
- 
+  const getAuthState = () => {
+    return authState || null;
+  };
+
   return (
     <AdminAuthContext.Provider
       value={{
@@ -111,7 +132,7 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         logout,
         login,
         getAdminPayload,
-        getAuthState
+        getAuthState,
       }}
     >
       {children}
