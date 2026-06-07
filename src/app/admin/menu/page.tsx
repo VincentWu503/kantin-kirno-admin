@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
-import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useState, useEffect, ChangeEvent } from "react";
 import { CldUploadWidget } from "next-cloudinary";
 import AdminGuard from "@/components/AdminGuard";
 import { uploadOptions } from "@/config/cloudinary";
 import { Stack, Switch, Divider, Pagination } from "@mui/material";
 import { upsertMenu, fetchMenu, deleteMenu } from "@/lib/menu";
+import { handleSessionExpiredError } from "@/lib/admins";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 interface MenuItem {
   menu_id: number;
@@ -39,9 +39,10 @@ function MenuFormModal({
   const [stockAvailable, setStockAvailable] = useState<boolean>(
     item?.is_available ?? true,
   );
+  const { logout } = useAdminAuth();
 
   const handleSubmit = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!token) return;
     if (!name.trim()) return alert("Nama menu wajib diisi.");
     if (!price.trim() || isNaN(Number(price)))
@@ -68,7 +69,7 @@ function MenuFormModal({
         onSuccess();
       }
     } catch (err: any) {
-      console.error(err);
+      await handleSessionExpiredError(err, logout);
       alert("Terjadi kesalahan koneksi.");
     } finally {
       setLoading(false);
@@ -159,6 +160,7 @@ function MenuFormModal({
 
         {/* Cloudinary upload widget (signed) */}
         <div>
+          {/*currently unprotected from system's auth */}
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
             options={
@@ -282,7 +284,10 @@ function MenuCard({
             spacing={1}
             sx={{ alignItems: "center", justifyContent: "space-between" }}
           >
-            <span className="text-black text-sm font-medium truncate" title={item.name}>
+            <span
+              className="text-black text-sm font-medium truncate"
+              title={item.name}
+            >
               {item.name}
             </span>
             {item.is_available ? (
@@ -368,7 +373,7 @@ function CMSMenuContent() {
     setFetching(true);
     try {
       const res = await fetchMenu(offset, limit);
-      const data = res.data as any
+      const data = res.data as any;
       setMenus(data?.data || []);
       setTotalCount(data?.count || 0);
     } catch {
@@ -389,16 +394,15 @@ function CMSMenuContent() {
   }
 
   const handleDelete = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!deleteItem || !token) return;
     setDeleteLoading(true);
     try {
       const res = await deleteMenu(deleteItem.menu_id, token);
-      const data = res.data as any
+      const data = res.data as any;
       if (res.status === 200 || res.status === 204) {
         setDeleteItem(null);
         fetchMenus();
-
       } else {
         alert(data?.message || "Gagal menghapus menu.");
       }
@@ -421,7 +425,7 @@ function CMSMenuContent() {
           <span className="text-white text-3xl font-light leading-none">+</span>
         </button>
       </div>
-      
+
       {/* Grid */}
       <div className="p-4">
         {fetching ? (
@@ -470,7 +474,7 @@ function CMSMenuContent() {
       </div>
 
       {/* Modals */}
-      {addModal  && (
+      {addModal && (
         <MenuFormModal
           mode="add"
           onClose={() => setAddModal(false)}
@@ -481,7 +485,7 @@ function CMSMenuContent() {
         />
       )}
 
-      {editItem &&  (
+      {editItem && (
         <MenuFormModal
           mode="edit"
           item={editItem}

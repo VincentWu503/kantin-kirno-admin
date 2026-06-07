@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { getAdmins, createAdmin, updateAdmin, deleteAdmin } from "@/lib/admins";
+import {
+  getAdmins,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
+  handleSessionExpiredError,
+} from "@/lib/admins";
 
 interface AdminItem {
   admin_id: string;
@@ -191,6 +197,7 @@ function EditAdminForm({
   onSuccess: () => void;
 }) {
   const [email, setEmail] = useState(item.email);
+  const [superAdmin, setSuperAdmin] = useState(item.super_admin);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -202,10 +209,13 @@ function EditAdminForm({
 
     setLoading(true);
     try {
-      const body: Record<string, string> = {};
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      const body: Record<string, string | boolean> = {};
       if (email.trim()) body.email = email.trim();
+      if (superAdmin !== item.super_admin) body.super_admin = superAdmin;
 
-      const res = await updateAdmin(item.admin_id, body, token || "");
+      const res = await updateAdmin(item.admin_id, body, token);
       if (res.status === 200 || res.status === 204) {
         onSuccess();
       } else {
@@ -234,6 +244,20 @@ function EditAdminForm({
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-white rounded-xl px-4 py-3 text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
+          </div>
+          {/* Toggle Super Admin*/}
+          <div>
+            <div className="flex justify-between items-center gap-2">
+              <label className="w-full block text-black text-base mb-1">
+                Jadikan Super Admin
+              </label>
+              <input
+                type="checkbox"
+                onChange={(e) => setSuperAdmin(e.target.checked)}
+                className=" w-[1.25em] h-[1.25em] shrink-0 bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                checked={superAdmin}
+              />
+            </div>
           </div>
 
           {/* Error */}
@@ -388,17 +412,19 @@ function KelolaContent() {
   const [editTarget, setEditTarget] = useState<AdminItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminItem | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const { logout } = useAdminAuth();
 
   // Hooks must be called unconditionally
   const fetchAdmins = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!token) return;
     setFetching(true);
     try {
       const res = await getAdmins(token);
       const data = res.data as { data?: AdminItem[]; admins?: AdminItem[] };
       setAdmins(data.data || data.admins || []);
-    } catch {
+    } catch (err: any) {
+      await handleSessionExpiredError(err, logout);
       alert("Gagal memload daftar admin.");
     } finally {
       setFetching(false);
@@ -406,7 +432,7 @@ function KelolaContent() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (token && currentAdmin) {
       fetchAdmins();
     }
@@ -420,7 +446,7 @@ function KelolaContent() {
   }
 
   const handleDelete = async () => {
-    const token = localStorage.getItem('admin_token');
+    const token = localStorage.getItem("admin_token");
     if (!deleteTarget || !token) return;
     setDeleteLoading(true);
     try {
@@ -432,7 +458,8 @@ function KelolaContent() {
         const d = res.data as { message?: string };
         alert(d.message || "Gagal menghapus admin.");
       }
-    } catch {
+    } catch (err: any) {
+      await handleSessionExpiredError(err, logout);
       alert("Terjadi kesalahan.");
     } finally {
       setDeleteLoading(false);
@@ -443,7 +470,7 @@ function KelolaContent() {
   if (view === "add") {
     return (
       <AddAdminForm
-        token={localStorage.getItem('admin_token')}
+        token={localStorage.getItem("admin_token")}
         onBack={() => setView("list")}
         onSuccess={() => {
           setView("list");
@@ -457,7 +484,7 @@ function KelolaContent() {
     return (
       <EditAdminForm
         item={editTarget}
-        token={localStorage.getItem('admin_token')}
+        token={localStorage.getItem("admin_token")}
         onBack={() => {
           setView("list");
           setEditTarget(null);
