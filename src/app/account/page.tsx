@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
+import Image from "next/image";
 
 // Bottom Navigation
 
@@ -49,7 +50,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/admin/menu"),
-      active: false
+      active: false,
     },
     {
       label: "Close",
@@ -69,7 +70,7 @@ function BottomNav() {
         </svg>
       ),
       onClick: () => router.push("/admin/status"),
-      active: false
+      active: false,
     },
     {
       label: "Account",
@@ -129,10 +130,16 @@ function AccountContent() {
       {/* Body */}
       <div className="flex flex-col items-center px-6 gap-6">
         {/* Logo */}
-        <div className="w-40 h-40 rounded-full mt-6 md:mt-9 border-4 border-red-400 flex items-center justify-center bg-yellow-400 overflow-hidden">
-          <span className="text-[11px] font-extrabold text-black text-center leading-tight px-2">
+        <div className="w-50 h-50 rounded-full mt-6 md:mt-9 flex items-center justify-center bg-white overflow-hidden">
+          {/*<span className="text-[11px] font-extrabold text-black text-center leading-tight px-2">
             SAHERA PAK KIRNO
-          </span>
+          </span>*/}
+          <Image
+            src="/kirno_logo_name.png"
+            alt="Logo"
+            width={512}
+            height={512}
+          />
         </div>
 
         {/* Nama admin */}
