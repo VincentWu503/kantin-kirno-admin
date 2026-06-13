@@ -20,27 +20,35 @@ export default function AdminLoginPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = (await handleLoginApi({
+      const response = await handleLoginApi({
         email,
         password,
-      })) as any;
+      });
 
       if (response.status === 200) {
-        login(response.data.token);
-        router.push("/admin/menu");
+        const token =
+          (response as { data?: { token?: string } }).data?.token || "";
+        if (token) {
+          login(token);
+          router.push("/admin/menu");
+        } else {
+          setErrorMessage("Login gagal: token tidak ditemukan");
+        }
       } else {
-        setErrorMessage(response.message || "Login gagal");
+        setErrorMessage(
+          (response as { message?: string }).message || "Login gagal",
+        );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
+      const message =
+        err instanceof Error ? err.message : "Unknown error";
+
       try {
-        const errData = JSON.parse(err.message);
+        const errData = JSON.parse(message) as { message?: string };
         setErrorMessage(errData.message || "Login gagal");
       } catch {
-        setErrorMessage(
-          "Terjadi kesalahan: " +
-            (err instanceof Error ? err.message : "Unknown error"),
-        );
+        setErrorMessage("Terjadi kesalahan: " + message);
       }
     } finally {
       setLoading(false);
@@ -96,6 +104,14 @@ export default function AdminLoginPage() {
               className="w-full p-3 bg-white rounded-xl border-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-sm"
               required
             />
+
+            <div className="mt-2 text-[11px] leading-4 text-gray-600">
+              <div className="font-semibold text-gray-800">Ketentuan password:</div>
+              <ul className="list-disc pl-5">
+                <li>Minimal 12 karakter (maks 30)</li>
+                <li>Harus ada huruf besar, huruf kecil, angka, dan spesial <span className="font-mono">#@$!%*?&</span></li>
+              </ul>
+            </div>
           </div>
 
           {errorMessage && (
