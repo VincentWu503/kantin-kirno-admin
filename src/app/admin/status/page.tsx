@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import AdminGuard from "@/components/AdminGuard";
-import { getRestaurantStatus, updateRestaurantStatus } from "@/lib/restaurant";
+import { getRestaurantStatus, updateRestaurantStatus, getRestaurantData, updateRestaurantData } from "@/lib/restaurant";
 import { handleSessionExpiredError } from "@/lib/admins";
 
 // SwipeToConfirm Component
@@ -274,6 +274,191 @@ function StatusToggle({
   );
 }
 
+// Schedule Section Component
+function ScheduleSection() {
+  const [initialData, setInitialData] = useState<{ open: string; close: string; fromDay: string; toDay: string } | null>(null);
+  const [currentData, setCurrentData] = useState<{ open: string; close: string; fromDay: string; toDay: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { logout } = useAdminAuth();
+
+  const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const daysIndo = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+
+  const parseDaysOpen = (dayClosed: string[]) => {
+    if (!dayClosed || dayClosed.length === 0) return { from: "monday", to: "sunday" };
+    if (dayClosed.length === 7) return { from: "monday", to: "sunday" }; 
+    const openDays = daysOfWeek.filter(d => !dayClosed.includes(d));
+    let from = openDays[0];
+    let to = openDays[openDays.length - 1];
+    for(let i=0; i<openDays.length-1; i++) {
+      const currIdx = daysOfWeek.indexOf(openDays[i]);
+      const nextIdx = daysOfWeek.indexOf(openDays[i+1]);
+      if(nextIdx !== currIdx + 1) {
+         to = openDays[i];
+         from = openDays[i+1];
+         break;
+      }
+    }
+    return { from, to };
+  }
+
+  const generateDayClosed = (fromDay: string, toDay: string) => {
+    const fromIndex = daysOfWeek.indexOf(fromDay);
+    const toIndex = daysOfWeek.indexOf(toDay);
+    let openDays = [];
+    if (fromIndex <= toIndex) {
+      for (let i = fromIndex; i <= toIndex; i++) openDays.push(daysOfWeek[i]);
+    } else {
+      for (let i = fromIndex; i < 7; i++) openDays.push(daysOfWeek[i]);
+      for (let i = 0; i <= toIndex; i++) openDays.push(daysOfWeek[i]);
+    }
+    return daysOfWeek.filter(d => !openDays.includes(d));
+  }
+
+  const fetchSchedule = async () => {
+    try {
+      const res = await getRestaurantData();
+      const data = res.data as any;
+      const physical = data.physical_place || {};
+      const openTime = physical.open ? physical.open.substring(0, 5) : "08:00";
+      const closeTime = physical.close ? physical.close.substring(0, 5) : "15:00";
+      const daysOpen = parseDaysOpen(physical.day_closed || []);
+      
+      const parsedData = {
+        open: openTime,
+        close: closeTime,
+        fromDay: daysOpen.from,
+        toDay: daysOpen.to,
+      };
+      setInitialData(parsedData);
+      setCurrentData(parsedData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedule();
+  }, []);
+
+  const hasChanges = initialData && currentData && JSON.stringify(initialData) !== JSON.stringify(currentData);
+
+  const handleSave = async () => {
+    if (!currentData) return;
+    const token = localStorage.getItem("admin_token") || "";
+    if (!token) return;
+    setSaving(true);
+    try {
+      const payload = {
+        physical_place: {
+          open: currentData.open + ":00",
+          close: currentData.close + ":00",
+          day_closed: generateDayClosed(currentData.fromDay, currentData.toDay)
+        }
+      };
+      const res = await updateRestaurantData(payload, token);
+      if (res.status === 200 || res.status === 204) {
+        setInitialData(currentData);
+      } else {
+        const errData = res.data as { message?: string };
+        alert(errData.message || "Gagal memperbarui jadwal.");
+      }
+    } catch (err: any) {
+      await handleSessionExpiredError(err, logout);
+      alert("Terjadi kesalahan.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading || !currentData) {
+    return (
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mt-6 flex justify-center items-center h-48">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-3xl p-8 flex flex-col gap-6 shadow-sm border border-gray-100 mt-6">
+      <h2 className="text-xl font-bold text-gray-900">Jadwal Buka Toko</h2>
+      
+      <div className="flex flex-col gap-4">
+        {/* Baris 1: Hari Buka */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Hari Buka</label>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-gray-500 text-sm">dari</span>
+              <select 
+                value={currentData.fromDay}
+                onChange={(e) => setCurrentData({ ...currentData, fromDay: e.target.value })}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm p-2 border bg-white"
+              >
+                {daysOfWeek.map((day, idx) => (
+                  <option key={day} value={day}>{daysIndo[idx]}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-gray-500 text-sm">ke</span>
+              <select 
+                value={currentData.toDay}
+                onChange={(e) => setCurrentData({ ...currentData, toDay: e.target.value })}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm p-2 border bg-white"
+              >
+                {daysOfWeek.map((day, idx) => (
+                  <option key={day} value={day}>{daysIndo[idx]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Baris 2: Jam Buka */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Jam Buka</label>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-gray-500 text-sm">dari</span>
+              <input 
+                type="time" 
+                value={currentData.open}
+                onChange={(e) => setCurrentData({ ...currentData, open: e.target.value })}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm p-2 border bg-white"
+              />
+            </div>
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-gray-500 text-sm">ke</span>
+              <input 
+                type="time" 
+                value={currentData.close}
+                onChange={(e) => setCurrentData({ ...currentData, close: e.target.value })}
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm p-2 border bg-white"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {hasChanges && (
+        <div className="flex justify-end mt-4">
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors disabled:bg-blue-400"
+          >
+            {saving ? "Menyimpan..." : "Konfirmasi"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Main Content
 
 function StatusContent() {
@@ -365,6 +550,8 @@ function StatusContent() {
             />
           </div>
         )}
+
+        <ScheduleSection />
       </div>
 
       {showConfirm && isOpen !== null && (

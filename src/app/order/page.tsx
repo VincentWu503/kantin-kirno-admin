@@ -34,6 +34,14 @@ interface Order {
   items?: OrderItem[];
 }
 
+const ORDER_STATUS_MAP: Record<string, string> = {
+  PENDING: "Belum Dibayar",
+  PROCESSING: "Sedang Dimasak",
+  READY: "Siap Diambil/Diantar",
+  COMPLETED: "Selesai",
+  CANCELLED: "Dibatalkan",
+};
+
 // Detail Modal
 
 function OrderDetailModal({
@@ -100,11 +108,41 @@ function OrderDetailModal({
     }
   };
 
+  const handleCancelOrder = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) return;
+    setLoading(true);
+    try {
+      if (typeof window === "undefined") return;
+      const token = localStorage.getItem("admin_token") || "";
+      const res = await updateOrderStatus(order.order_id, "CANCELLED", token);
+      if (res.status === 200 || res.status === 204) {
+        onStatusUpdated();
+        onClose();
+      } else {
+        const d = res.data as { message?: string };
+        alert(d.message || "Gagal membatalkan pesanan.");
+      }
+    } catch (err: any) {
+      alert("Terjadi kesalahan saat membatalkan pesanan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 overflow-y-auto py-4 px-3">
       <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl mx-auto my-auto">
         {/* Title */}
-        <div className="px-6 pt-6 pb-3 border-b border-gray-200">
+        <div className="px-6 pt-6 pb-3 border-b border-gray-200 flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full flex items-center justify-center transition active:scale-90 shrink-0"
+            title="Kembali"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+          </button>
           <h2
             className="text-xl font-bold text-black truncate"
             style={{ fontFamily: "Georgia, serif" }}
@@ -157,10 +195,14 @@ function OrderDetailModal({
           {/* Info Pengantaran*/}
           <div>
             <p className="font-semibold text-base mb-1">Info Pengantaran :</p>
-            {order.building && (
+            {order.building ? (
               <p className="text-sm">
-                {`Lt.${order.floor ? order.floor : "-"} Gedung ${order.building}, ${order.extra}`}
+                Diantar ke: {`Lt.${order.floor ? order.floor : "-"} Gedung ${order.building}, ${order.extra}`}
               </p>
+            ) : order.is_takeaway ? (
+              <p className="text-sm">Dibungkus (Takeaway)</p>
+            ) : (
+              <p className="text-sm">Makan di tempat (Dine-in)</p>
             )}
           </div>
 
@@ -177,15 +219,20 @@ function OrderDetailModal({
 
         {/* Actions */}
         <div className="px-6 pb-6 flex items-center gap-3">
-          {/* Back button */}
-          <button
-            onClick={onClose}
-            className="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition active:scale-90 shrink-0"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-            </svg>
-          </button>
+          {/* Cancel button */}
+          {(order.order_status !== 'COMPLETED' && order.order_status !== 'CANCELLED') && (
+            <button
+              onClick={handleCancelOrder}
+              disabled={loading}
+              className="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition active:scale-90 shrink-0"
+              title="Batalkan Pesanan"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          )}
 
           {/* Lanjut button */}
           {nextStatus && (
@@ -217,41 +264,49 @@ function OrderCard({
   return (
     <div className="bg-gray-100 rounded-2xl overflow-hidden">
       {/* Order Header */}
-      <div className="px-4 pt-4 pb-2 border-b border-gray-300">
+      <div className="px-4 pt-4 pb-2 border-b border-gray-300 flex justify-between items-center">
         <h3
-          className="text-xl font-bold text-black"
+          className="text-xl font-bold text-black truncate"
           style={{ fontFamily: "Georgia, serif" }}
         >
           Pesanan{" "}
           {order.contact_name ? order.contact_name : order.contact_number}
         </h3>
+        {order.created_at && (
+          <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded-md shrink-0 ml-2">
+            {new Date(order.created_at).toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
       </div>
 
       <div className="p-3 space-y-2">
         {/* Location */}
-        {(order.building || order.is_takeaway) && (
-          <div className="bg-white rounded-xl px-4 py-2 flex items-center gap-2">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#666"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0"
-            >
-              <circle cx="12" cy="10" r="3" />
-              <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8z" />
-            </svg>
-            <p className="text-sm text-gray-700 truncate">
-              {order.building
-                ? order.building
-                : "Pelanggan ini mau ambil di tempat."}
-            </p>
-          </div>
-        )}
+        <div className="bg-white rounded-xl px-4 py-2 flex items-center gap-2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#666"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0"
+          >
+            <circle cx="12" cy="10" r="3" />
+            <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 13 8 13s8-7.75 8-13a8 8 0 0 0-8-8z" />
+          </svg>
+          <p className="text-sm text-gray-700 truncate">
+            {order.building
+              ? `Diantar ke Gedung ${order.building}`
+              : order.is_takeaway
+                ? "Dibungkus (Takeaway)"
+                : "Makan di tempat (Dine-in)"}
+          </p>
+        </div>
 
         {/* Items + Subtotal */}
         <div className="bg-white rounded-xl px-4 py-3 space-y-1">
@@ -286,7 +341,7 @@ function OrderCard({
             <p className="text-sm text-black">
               Status:{" "}
               <span className="font-medium">
-                [{order.order_status ?? "PENDING"}]
+                [{ORDER_STATUS_MAP[order.order_status] ?? order.order_status}]
               </span>
             </p>
           </div>
@@ -310,6 +365,7 @@ function OrderListContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [activeTab, setActiveTab] = useState<"ongoing" | "history">("ongoing");
   const { logout } = useAdminAuth();
 
   const fetchOrders = useCallback(async () => {
@@ -339,6 +395,20 @@ function OrderListContent() {
     fetchOrders();
   }, [fetchOrders]);
 
+  const displayOrders = orders
+    .filter((o) => {
+      if (activeTab === "ongoing") {
+        return o.order_status !== "COMPLETED" && o.order_status !== "CANCELLED";
+      } else {
+        return o.order_status === "COMPLETED" || o.order_status === "CANCELLED";
+      }
+    })
+    .sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    });
+
   return (
     <div className="px-4 py-4 space-y-4">
       <h2
@@ -347,17 +417,42 @@ function OrderListContent() {
       >
         Order List
       </h2>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mt-2 mb-4">
+        <button
+          onClick={() => setActiveTab("ongoing")}
+          className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${
+            activeTab === "ongoing"
+              ? "border-blue-600 text-blue-600 bg-blue-50/30"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Sedang Jalan
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${
+            activeTab === "history"
+              ? "border-blue-600 text-blue-600 bg-blue-50/30"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Selesai / Riwayat
+        </button>
+      </div>
+
       {fetching ? (
         <div className="flex justify-center items-center h-48">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : orders.length === 0 ? (
+      ) : displayOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-2">
           <span className="text-4xl">📋</span>
           <p className="text-sm">Belum ada order masuk.</p>
         </div>
       ) : (
-        orders.map((order) => (
+        displayOrders.map((order) => (
           <OrderCard
             key={order.order_id}
             order={order}
@@ -371,7 +466,7 @@ function OrderListContent() {
           onClose={() => setSelectedOrder(null)}
           onStatusUpdated={fetchOrders}
         />
-      )}{" "}
+      )}
     </div>
   );
 }

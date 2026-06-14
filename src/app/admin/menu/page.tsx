@@ -112,7 +112,7 @@ function MenuFormModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nama makanan"
-            className="w-full bg-blue-500 text-white placeholder-blue-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
 
@@ -126,7 +126,7 @@ function MenuFormModal({
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="Harga (Rp)"
-            className="w-full bg-blue-500 text-white placeholder-blue-200 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
 
@@ -259,8 +259,8 @@ function MenuCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="bg-black-500 flex flex-col gap-2">
-      <div className="rounded-2xl p-2 flex flex-col gap-2">
+    <div className="bg-white rounded-2xl flex flex-col gap-2 shadow-sm border border-gray-100 p-2">
+      <div className="flex flex-col gap-2">
         {/* Image */}
         <div
           className="bg-red-400 rounded-xl overflow-hidden"
@@ -291,12 +291,12 @@ function MenuCard({
               {item.name}
             </span>
             {item.is_available ? (
-              <span className="text-green-600 text-sm font">Tersedia</span>
+              <span className="text-green-600 text-xs font-medium">Tersedia</span>
             ) : (
-              <span className="text-red-700 text-sm font">Habis</span>
+              <span className="text-red-700 text-xs font-medium">Habis</span>
             )}
           </Stack>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-1">
             <p className="text-black text-xs">Harga</p>
             <p className="text-black text-xs font-semibold">
               {item.price
@@ -352,6 +352,92 @@ function MenuCard({
   );
 }
 
+// Menu List Row
+
+function MenuListRow({
+  item,
+  onEdit,
+  onDelete,
+}: {
+  item: MenuItem;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="bg-white rounded-2xl p-3 flex items-center gap-4 shadow-sm border border-gray-100">
+      <div
+        className="bg-red-400 rounded-xl overflow-hidden flex-shrink-0"
+        style={{ width: 64, height: 64 }}
+      >
+        {item.image_url ? (
+          <img
+            src={item.image_url}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-red-400" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-black text-sm font-semibold truncate" title={item.name}>
+          {item.name}
+        </h3>
+        <p className="text-gray-500 text-xs mt-1">
+          {item.price ? `Rp ${item.price.toLocaleString("id-ID")}` : "------"}
+        </p>
+      </div>
+      <div className="flex-shrink-0 text-right w-16">
+        {item.is_available ? (
+          <span className="text-green-600 text-xs font-medium">Tersedia</span>
+        ) : (
+          <span className="text-red-700 text-xs font-medium">Habis</span>
+        )}
+      </div>
+      <div className="flex gap-2 flex-shrink-0 ml-2">
+        <button
+          onClick={onEdit}
+          className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-xl flex items-center justify-center transition active:scale-95"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-10 h-10 bg-red-400 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition active:scale-95"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Main Page
 
 function CMSMenuContent() {
@@ -363,6 +449,8 @@ function CMSMenuContent() {
 
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [fetching, setFetching] = useState(true);
+
+  const [viewMode, setViewMode] = useState<"card" | "list">("card");
 
   const [addModal, setAddModal] = useState(false);
   const [editItem, setEditItem] = useState<MenuItem | null>(null);
@@ -413,10 +501,29 @@ function CMSMenuContent() {
     }
   };
 
+  const sortedMenus = [...menus].sort((a, b) => {
+    if (a.is_available === b.is_available) return 0;
+    return a.is_available ? -1 : 1;
+  });
+
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      {/* Tombol Tambah */}
-      <div className="p-4 flex items-end justify-end">
+      {/* Tombol Tambah & Toggle View */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex bg-gray-200 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode("card")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${viewMode === "card" ? "bg-white shadow text-black" : "text-gray-500 hover:text-black"}`}
+          >
+            Card
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${viewMode === "list" ? "bg-white shadow text-black" : "text-gray-500 hover:text-black"}`}
+          >
+            List
+          </button>
+        </div>
         <button
           onClick={() => setAddModal(true)}
           className="fixed bottom-24 right-6 w-14 h-14 bg-black rounded-full flex items-center justify-center hover:bg-gray-800 transition active:scale-95 shadow-lg z-30 md:bottom-10 md:right-10"
@@ -426,29 +533,42 @@ function CMSMenuContent() {
         </button>
       </div>
 
-      {/* Grid */}
-      <div className="p-4">
+      {/* Grid / List */}
+      <div className="p-4 pt-0">
         {fetching ? (
           <div className="flex justify-center items-center h-48">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : menus.length === 0 ? (
+        ) : sortedMenus.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-2">
             <span className="text-4xl">🍽️</span>
             <p className="text-sm">Belum ada menu. Tekan + untuk menambah.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {menus.map((item) => (
-                <MenuCard
-                  key={item.menu_id}
-                  item={item}
-                  onEdit={() => setEditItem(item)}
-                  onDelete={() => setDeleteItem(item)}
-                />
-              ))}
-            </div>
+            {viewMode === "card" ? (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {sortedMenus.map((item) => (
+                  <MenuCard
+                    key={item.menu_id}
+                    item={item}
+                    onEdit={() => setEditItem(item)}
+                    onDelete={() => setDeleteItem(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {sortedMenus.map((item) => (
+                  <MenuListRow
+                    key={item.menu_id}
+                    item={item}
+                    onEdit={() => setEditItem(item)}
+                    onDelete={() => setDeleteItem(item)}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Pagination Controls */}
             {totalCount > 0 && (
