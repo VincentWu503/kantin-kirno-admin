@@ -78,7 +78,7 @@ function MenuFormModal({
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-gray-100 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-100 rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Back button */}
         <button
           onClick={onClose}

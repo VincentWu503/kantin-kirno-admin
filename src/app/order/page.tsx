@@ -130,8 +130,8 @@ function OrderDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 overflow-y-auto py-4 px-3">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl mx-auto my-auto">
+    <div className="fixed inset-0 z-[999] flex items-start justify-center bg-black/30 overflow-y-auto py-4 px-3">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl mx-auto my-auto max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Title */}
         <div className="px-6 pt-6 pb-3 border-b border-gray-200 flex items-center gap-3">
           <button
