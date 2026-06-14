@@ -273,12 +273,21 @@ function OrderCard({
           {order.contact_name ? order.contact_name : order.contact_number}
         </h3>
         {order.created_at && (
-          <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded-md shrink-0 ml-2">
-            {new Date(order.created_at).toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
+          <div className="flex flex-col items-end shrink-0 ml-2">
+            <span className="text-[10px] text-gray-500 mb-0.5 font-medium">
+              {new Date(order.created_at).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+              })}
+            </span>
+            <span className="text-xs font-semibold text-gray-600 bg-gray-200 px-2 py-1 rounded-md">
+              {new Date(order.created_at).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
         )}
       </div>
 
